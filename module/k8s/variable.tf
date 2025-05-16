@@ -109,7 +109,21 @@ variable "kubeconfig_path" {
 }
 
 variable "node_pools" {
-  type        = map(any)
+  type = map(object({
+    name       = optional(string)
+    node_count = optional(number)
+    min_nodes  = optional(number)
+    max_nodes  = optional(number)
+    size       = optional(string)
+    auto_scale = optional(bool)
+    labels     = optional(map(string))
+    tags       = optional(list(string))
+    taint      = optional(list(object({
+      key    = string
+      value  = string
+      effect = string
+    })))
+  }))
   default     = {}
   description = "Cluster default/additional node pools."
 }

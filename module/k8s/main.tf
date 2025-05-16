@@ -10,16 +10,17 @@ resource "digitalocean_kubernetes_cluster" "this" {
   registry_integration = var.registry_integration
 
   dynamic "node_pool" {
-    for_each = var.node_pools.default_node
+    for_each = local.default_node_pool
     content {
-      name       = lookup(node_pool.value, "name", "critical")
+      name       = lookup(node_pool.value, "name", node_pool.key)
       size       = lookup(node_pool.value, "size", "s-1vcpu-2gb")
       node_count = lookup(node_pool.value, "auto_scale", true) ? null : lookup(node_pool.value, "node_count", 1)
       auto_scale = lookup(node_pool.value, "auto_scale", true)
       min_nodes  = lookup(node_pool.value, "min_nodes", 1)
       max_nodes  = lookup(node_pool.value, "max_nodes", 2)
-      tags       = lookup(node_pool.value, "tags", null)
-      labels     = lookup(node_pool.value, "labels", null)
+      tags       = lookup(node_pool.value, "tags", [])
+      labels     = lookup(node_pool.value, "labels", {})
+
       dynamic "taint" {
         for_each = lookup(node_pool.value, "taint", [])
         content {
@@ -42,16 +43,17 @@ resource "digitalocean_kubernetes_cluster" "this" {
 }
 
 resource "digitalocean_kubernetes_node_pool" "this" {
-  for_each   = var.enabled ? var.app_node_pools : {}
-  cluster_id = join("", digitalocean_kubernetes_cluster.this[*].id)
-  name       = lookup(each.value, "name", "application")
+  for_each   = var.enabled ? local.remaining_node_pools : {}
+  cluster_id = digitalocean_kubernetes_cluster.this.id
+
+  name       = lookup(each.value, "name", each.key)
   size       = lookup(each.value, "size", "s-1vcpu-2gb")
   node_count = lookup(each.value, "auto_scale", true) ? null : lookup(each.value, "node_count", 1)
   auto_scale = lookup(each.value, "auto_scale", true)
   min_nodes  = lookup(each.value, "min_nodes", 1)
   max_nodes  = lookup(each.value, "max_nodes", 2)
-  tags       = lookup(each.value, "tags", null)
-  labels     = lookup(each.value, "labels", null)
+  tags       = lookup(each.value, "tags", [])
+  labels     = lookup(each.value, "labels", {})
 
   dynamic "taint" {
     for_each = lookup(each.value, "taint", [])

@@ -28,12 +28,14 @@ module "k8s" {
 
   node_pools = {
     default_node = {
-      node_count = 1
-      min_nodes  = 1
-      max_nodes  = 2
-      size       = "s-1vcpu-2gb"
+      name       = "Diploma"
+      node_count = 2
+      min_nodes  = 2
+      max_nodes  = 3
+      auto_scale = true
+      size       = "s-2vcpu-4gb"
       labels     = { "cluster" = "critical", }
-      tags       = ["demo"]
+      tags       = ["Diploma"]
       taint = [
         {
           key    = "name"
