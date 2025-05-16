@@ -44,7 +44,7 @@ resource "digitalocean_kubernetes_cluster" "this" {
 
 resource "digitalocean_kubernetes_node_pool" "this" {
   for_each   = var.enabled ? local.remaining_node_pools : {}
-  cluster_id = digitalocean_kubernetes_cluster.this.id
+  cluster_id = digitalocean_kubernetes_cluster.this[*].id
 
   name       = lookup(each.value, "name", each.key)
   size       = lookup(each.value, "size", "s-1vcpu-2gb")
