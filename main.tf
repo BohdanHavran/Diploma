@@ -1,5 +1,5 @@
-resource "digitalocean_project" "diploma" {
-  name        = "Gremcy"
+resource "digitalocean_project" "pharmacy" {
+  name        = "Pharmacy"
   purpose     = "Operational / Developer tooling"
   resources = [
     module.k8s.urn[0],
@@ -12,15 +12,15 @@ resource "digitalocean_project" "diploma" {
 module "vpc" {
   source      = "./module/vpc"
   enabled     = true
-  name        = "vpc-diploma"
+  name        = "vpc-pharmacy"
   region      = "fra1"
   ip_range    = "10.10.0.0/16"
-  description = "Diploma"
+  description = "Pharmacy"
 }
 
 module "container-registry" {
   source                 = "./module/container_registry"
-  name                   = "Diploma"
+  name                   = "Pharmacy"
   environment            = "prod"
   region                 = "fra1"
   subscription_tier_slug = "starter"
@@ -29,7 +29,7 @@ module "container-registry" {
 module "k8s" {
   source = "./module/k8s"
 
-  name            = "Diploma"
+  name            = "Pharmacy"
   environment     = "prod"
   region          = "fra1"
   cluster_version = "1.32.2-do.1"
@@ -39,14 +39,14 @@ module "k8s" {
 
   node_pools = {
     default_node = {
-      name       = "Diploma"
+      name       = "Pharmacy"
       node_count = 2
       min_nodes  = 2
       max_nodes  = 3
       auto_scale = true
       size       = "s-2vcpu-4gb"
       labels     = { "cluster" = "critical", }
-      tags       = ["Diploma"]
+      tags       = ["Pharmacy"]
       taint = [
         {
           key    = "name"
@@ -60,7 +60,7 @@ module "k8s" {
 
 module "mysql" {
   source                       = "./module/db"
-  name                         = "Diploma"
+  name                         = "Pharmacy"
   environment                  = "prod"
   region                       = "fra1"
   cluster_engine               = "mysql"
@@ -73,11 +73,11 @@ module "mysql" {
     maintenance_hour = "02:00:00"
     maintenance_day  = "saturday"
   }
-  databases = ["Diploma"]
+  databases = ["Pharmacy"]
 
   users = [
     {
-      name              = "Diploma",
+      name              = "Pharmacy",
       mysql_auth_plugin = "mysql_native_password"
     }
   ]

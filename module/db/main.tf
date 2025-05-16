@@ -1,7 +1,7 @@
 ##-----------------------------------------------------------------------------
 #Description :Provides a DigitalOcean database cluster resource.
 ##-----------------------------------------------------------------------------
-resource "digitalocean_database_cluster" "cluster" {
+resource "digitalocean_database_cluster" "this" {
   count                = var.enabled == true ? 1 : 0
   name                 = var.name
   engine               = var.cluster_engine
@@ -35,19 +35,19 @@ resource "digitalocean_database_cluster" "cluster" {
 ##-----------------------------------------------------------------------------
 #Description :Provides a DigitalOcean database resource.
 ##-----------------------------------------------------------------------------
-resource "digitalocean_database_db" "database" {
-  depends_on = [digitalocean_database_cluster.cluster]
+resource "digitalocean_database_db" "this" {
+  depends_on = [digitalocean_database_cluster.this]
   count      = var.enabled == true ? length(var.databases) : 0
-  cluster_id = join("", digitalocean_database_cluster.cluster[*].id)
+  cluster_id = join("", digitalocean_database_cluster.this[*].id)
   name       = var.databases[count.index]
 }
 
 ##-----------------------------------------------------------------------------
 #Description : Provides a DigitalOcean database user resource.
 ##-----------------------------------------------------------------------------
-resource "digitalocean_database_user" "user" {
+resource "digitalocean_database_user" "this" {
   for_each          = var.enabled == true && var.users != null ? { for u in var.users : u.name => u } : {}
-  cluster_id        = join("", digitalocean_database_cluster.cluster[*].id)
+  cluster_id        = join("", digitalocean_database_cluster.this[*].id)
   name              = each.value.name
   mysql_auth_plugin = lookup(each.value, "mysql_auth_plugin", null)
 }
@@ -55,9 +55,9 @@ resource "digitalocean_database_user" "user" {
 ##-----------------------------------------------------------------------------
 #Description : Provides a DigitalOcean database connection pool resource.
 ##-----------------------------------------------------------------------------
-resource "digitalocean_database_connection_pool" "connection_pool" {
+resource "digitalocean_database_connection_pool" "this" {
   for_each   = var.enabled == true && var.create_pools ? { for p in var.pools : p.name => p } : {}
-  cluster_id = join("", digitalocean_database_cluster.cluster[*].id)
+  cluster_id = join("", digitalocean_database_cluster.this[*].id)
   name       = each.value.name
   mode       = each.value.mode
   size       = each.value.size
@@ -68,9 +68,9 @@ resource "digitalocean_database_connection_pool" "connection_pool" {
 ##-----------------------------------------------------------------------------
 #Description :Provides a DigitalOcean database firewall resource.
 ##-----------------------------------------------------------------------------
-resource "digitalocean_database_firewall" "firewall" {
+resource "digitalocean_database_firewall" "this" {
   count      = var.enabled == true && var.create_firewall ? 1 : 0
-  cluster_id = join("", digitalocean_database_cluster.cluster[*].id)
+  cluster_id = join("", digitalocean_database_cluster.this[*].id)
   dynamic "rule" {
     for_each = var.firewall_rules
     content {
@@ -78,15 +78,15 @@ resource "digitalocean_database_firewall" "firewall" {
       value = rule.value.value
     }
   }
-  depends_on = [digitalocean_database_cluster.cluster]
+  depends_on = [digitalocean_database_cluster.this]
 }
 
 ##-----------------------------------------------------------------------------
 #Description: Provides a DigitalOcean database replica resource.
 ##-----------------------------------------------------------------------------
-resource "digitalocean_database_replica" "replica-example" {
+resource "digitalocean_database_replica" "this" {
   count                = var.enabled == true && var.replica_enable ? 1 : 0
-  cluster_id           = join("", digitalocean_database_cluster.cluster[*].id)
+  cluster_id           = join("", digitalocean_database_cluster.this[*].id)
   name                 = "${var.cluster_engine}-replica"
   size                 = var.replica_size
   region               = var.replica_region
@@ -97,9 +97,9 @@ resource "digitalocean_database_replica" "replica-example" {
 ##-----------------------------------------------------------------------------
 #Description :Provides a DigitalOcean database firewall resource.
 ##-----------------------------------------------------------------------------
-resource "digitalocean_database_firewall" "replica-firewall" {
+resource "digitalocean_database_firewall" "this" {
   count      = var.enabled == true && var.create_firewall && var.replica_enable ? 1 : 0
-  cluster_id = join("", digitalocean_database_cluster.cluster[*].id)
+  cluster_id = join("", digitalocean_database_cluster.this[*].id)
   dynamic "rule" {
     for_each = var.firewall_rules
     content {
@@ -107,5 +107,5 @@ resource "digitalocean_database_firewall" "replica-firewall" {
       value = rule.value.value
     }
   }
-  depends_on = [digitalocean_database_cluster.cluster]
+  depends_on = [digitalocean_database_cluster.this]
 }

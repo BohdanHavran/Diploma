@@ -1,7 +1,7 @@
 ##-------------------------------------------------------------------------------------------------------------------------------------------------------------------
 #Description : Provides a DigitalOcean Container Registry resource. A Container Registry is a secure, private location to store your containers for rapid deployment.
 ##--------------------------------------------------------------------------------------------------------------------------------------------------------------------
-resource "digitalocean_container_registry" "main" {
+resource "digitalocean_container_registry" "this" {
   count                  = var.enabled ? 1 : 0
   name                   = var.name
   subscription_tier_slug = var.subscription_tier_slug
@@ -11,9 +11,9 @@ resource "digitalocean_container_registry" "main" {
 ##------------------------------------------------------------------------------
 #Description : Get Docker credentials for your DigitalOcean container registry.
 ##------------------------------------------------------------------------------
-resource "digitalocean_container_registry_docker_credentials" "main" {
+resource "digitalocean_container_registry_docker_credentials" "this" {
   count          = var.enabled ? 1 : 0
-  registry_name  = join("", digitalocean_container_registry.main[*].name)
+  registry_name  = join("", digitalocean_container_registry.this[*].name)
   write          = var.write
   expiry_seconds = var.expiry_seconds
 }
