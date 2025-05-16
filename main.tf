@@ -9,7 +9,7 @@ resource "digitalocean_project" "diploma" {
 }
 
 module "vpc" {
-  source      = "./modules/vpc"
+  source      = "./module/vpc"
   enabled     = true
   name        = "vpc-diploma"
   region      = "fra1"
