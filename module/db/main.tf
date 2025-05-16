@@ -87,10 +87,10 @@ resource "digitalocean_database_firewall" "firewall" {
 resource "digitalocean_database_replica" "replica-example" {
   count                = var.enabled == true && var.replica_enable ? 1 : 0
   cluster_id           = join("", digitalocean_database_cluster.cluster[*].id)
-  name                 = format("%s-${var.cluster_engine}-replica", module.labels.id)
+  name                 = "${var.cluster_engine}-replica"
   size                 = var.replica_size
   region               = var.replica_region
-  tags                 = [module.labels.id]
+#   tags                 = [module.labels.id]
   private_network_uuid = var.cluster_private_network_uuid
 }
 
