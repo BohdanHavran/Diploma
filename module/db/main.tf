@@ -80,32 +80,3 @@ resource "digitalocean_database_firewall" "this" {
   }
   depends_on = [digitalocean_database_cluster.this]
 }
-
-##-----------------------------------------------------------------------------
-#Description: Provides a DigitalOcean database replica resource.
-##-----------------------------------------------------------------------------
-resource "digitalocean_database_replica" "this" {
-  count                = var.enabled == true && var.replica_enable ? 1 : 0
-  cluster_id           = join("", digitalocean_database_cluster.this[*].id)
-  name                 = "${var.cluster_engine}-replica"
-  size                 = var.replica_size
-  region               = var.replica_region
-#   tags                 = [module.labels.id]
-  private_network_uuid = var.cluster_private_network_uuid
-}
-
-##-----------------------------------------------------------------------------
-#Description :Provides a DigitalOcean database firewall resource.
-##-----------------------------------------------------------------------------
-resource "digitalocean_database_firewall" "this" {
-  count      = var.enabled == true && var.create_firewall && var.replica_enable ? 1 : 0
-  cluster_id = join("", digitalocean_database_cluster.this[*].id)
-  dynamic "rule" {
-    for_each = var.firewall_rules
-    content {
-      type  = rule.value.type
-      value = rule.value.value
-    }
-  }
-  depends_on = [digitalocean_database_cluster.this]
-}
