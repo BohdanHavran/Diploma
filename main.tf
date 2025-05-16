@@ -20,7 +20,7 @@ module "vpc" {
 
 module "container-registry" {
   source                 = "./module/container_registry"
-  name                   = "Pharmacy"
+  name                   = "pharmacy"
   environment            = "prod"
   region                 = "fra1"
   subscription_tier_slug = "starter"
@@ -29,7 +29,7 @@ module "container-registry" {
 module "k8s" {
   source = "./module/k8s"
 
-  name            = "Pharmacy"
+  name            = "pharmacy"
   environment     = "prod"
   region          = "fra1"
   cluster_version = "1.32.2-do.1"
@@ -60,7 +60,7 @@ module "k8s" {
 
 module "mysql" {
   source                       = "./module/db"
-  name                         = "Pharmacy"
+  name                         = "pharmacy"
   environment                  = "prod"
   region                       = "fra1"
   cluster_engine               = "mysql"

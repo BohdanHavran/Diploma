@@ -3,7 +3,7 @@
 ##-----------------------------------------------------------------------------
 resource "digitalocean_database_cluster" "this" {
   count                = var.enabled == true ? 1 : 0
-  name                 = var.name
+  name                 = "${var.name}-cluster"
   engine               = var.cluster_engine
   version              = var.cluster_version
   size                 = var.cluster_size
