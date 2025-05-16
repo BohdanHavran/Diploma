@@ -66,7 +66,7 @@ resource "digitalocean_kubernetes_node_pool" "this" {
 }
 
 resource "kubernetes_secret" "this" {
-  count = can(length(var.docker_credentials)) && length(var.docker_credentials) > 0 ? 1 : 0
+  count = local.has_docker_credentials ? 1 : 0
 
   metadata {
     name = "docker-cfg"
