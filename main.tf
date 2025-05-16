@@ -35,7 +35,7 @@ module "k8s" {
   cluster_version = "1.32.2-do.1"
   vpc_uuid        = module.vpc.vpc_id
 
-  docker_credentials = module.container-registry.docker_credentials[0]
+  docker_credentials = module.container-registry.docker_credentials
 
   node_pools = {
     default_node = {

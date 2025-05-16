@@ -66,14 +66,12 @@ resource "digitalocean_kubernetes_node_pool" "this" {
 }
 
 resource "kubernetes_secret" "this" {
-  count = local.has_docker_credentials ? 1 : 0
-
   metadata {
     name = "docker-cfg"
   }
 
   data = {
-    ".dockerconfigjson" = var.docker_credentials
+    ".dockerconfigjson" = var.docker_credentials != "" ? var.docker_credentials : base64encode("{}")
   }
 
   type = "kubernetes.io/dockerconfigjson"
