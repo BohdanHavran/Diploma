@@ -3,7 +3,9 @@ resource "digitalocean_project" "pharmacy" {
   purpose     = "Operational / Developer tooling"
   resources = [
     module.k8s.urn[0],
-    module.vpc.vpc_urn
+    module.vpc.vpc_urn,
+    module.container-registry.urn[0],
+    module.mysql.database_cluster_urn[0]
   ]
   is_default  = "true"
 }
@@ -39,14 +41,14 @@ module "k8s" {
 
   node_pools = {
     default_node = {
-      name       = "Pharmacy"
+      name       = "pharmacy"
       node_count = 2
       min_nodes  = 2
       max_nodes  = 3
       auto_scale = true
       size       = "s-2vcpu-4gb"
       labels     = { "cluster" = "critical", }
-      tags       = ["Pharmacy"]
+      tags       = ["pharmacy"]
       taint = [
         {
           key    = "name"
