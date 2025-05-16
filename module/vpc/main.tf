@@ -1,6 +1,6 @@
 #Module      : VPC
 #Description : VPCs are virtual networks containing resources that can communicate with each other in full isolation, using private IP addresses.
-resource "digitalocean_vpc" "default" {
+resource "digitalocean_vpc" "this" {
   count       = var.enabled == true ? 1 : 0
   name        = var.name
   region      = var.region
