@@ -2,7 +2,7 @@ resource "digitalocean_project" "diploma" {
   name        = "Gremcy"
   purpose     = "Operational / Developer tooling"
   resources = [
-    module.k8s.urn,
+    module.k8s.urn[0],
     module.vpc.vpc_urn
   ]
   is_default  = "true"
