@@ -4,7 +4,6 @@ resource "digitalocean_project" "pharmacy" {
   resources = [
     module.k8s.urn[0],
     module.vpc.vpc_urn,
-    module.container-registry.urn[0],
     module.mysql.database_cluster_urn[0]
   ]
   is_default  = "true"

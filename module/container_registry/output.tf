@@ -5,10 +5,6 @@ output "id" {
   value       = join("", digitalocean_container_registry.this[*].id)
   description = "The id of the container registry."
 }
-output "urn" {
-  value       = join("", digitalocean_container_registry.this[*].urn)
-  description = "The id of the container registry."
-}
 output "name" {
   value       = join("", digitalocean_container_registry.this[*].name)
   description = "The name of the container registry."
