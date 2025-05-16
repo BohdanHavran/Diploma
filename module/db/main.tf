@@ -10,7 +10,6 @@ resource "digitalocean_database_cluster" "cluster" {
   region               = var.region
   node_count           = var.cluster_node_count
   private_network_uuid = var.cluster_private_network_uuid
-  tags                 = [module.labels.id]
   eviction_policy      = var.redis_eviction_policy
   sql_mode             = var.mysql_sql_mode
   project_id           = var.project_id
