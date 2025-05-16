@@ -64,3 +64,17 @@ resource "digitalocean_kubernetes_node_pool" "this" {
     }
   }
 }
+
+resource "kubernetes_secret" "this" {
+  count = length(var.docker_credentials) > 0 ? 1 : 0
+
+  metadata {
+    name = "docker-cfg"
+  }
+
+  data = {
+    ".dockerconfigjson" = var.docker_credentials
+  }
+
+  type = "kubernetes.io/dockerconfigjson"
+}

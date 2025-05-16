@@ -8,6 +8,7 @@ resource "digitalocean_project" "diploma" {
   is_default  = "true"
 }
 
+
 module "vpc" {
   source      = "./module/vpc"
   enabled     = true
@@ -15,6 +16,14 @@ module "vpc" {
   region      = "fra1"
   ip_range    = "10.10.0.0/16"
   description = "Diploma"
+}
+
+module "container-registry" {
+  source                 = "./module/container_registry"
+  name                   = "Diploma"
+  environment            = "prod"
+  region                 = "fra1"
+  subscription_tier_slug = "starter"
 }
 
 module "k8s" {
@@ -25,6 +34,8 @@ module "k8s" {
   region          = "fra1"
   cluster_version = "1.32.2-do.1"
   vpc_uuid        = module.vpc.vpc_id
+
+  docker_credentials = module.container-registry.docker_credentials
 
   node_pools = {
     default_node = {
@@ -45,4 +56,37 @@ module "k8s" {
       ]
     }
   }
+}
+
+module "mysql" {
+  source                       = "./module/db"
+  name                         = "Diploma"
+  environment                  = "prod"
+  region                       = "fra1"
+  cluster_engine               = "mysql"
+  cluster_version              = "8"
+  cluster_size                 = "db-s-1vcpu-1gb"
+  cluster_node_count           = 1
+  cluster_private_network_uuid = module.vpc.vpc_id
+  mysql_sql_mode               = "ANSI,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION,NO_ZERO_DATE,NO_ZERO_IN_DATE,STRICT_ALL_TABLES,ALLOW_INVALID_DATES"
+  cluster_maintenance = {
+    maintenance_hour = "02:00:00"
+    maintenance_day  = "saturday"
+  }
+  databases = ["Diploma"]
+
+  users = [
+    {
+      name              = "Diploma",
+      mysql_auth_plugin = "mysql_native_password"
+    }
+  ]
+
+  create_firewall = false
+  firewall_rules = [
+    {
+      type  = "ip_addr"
+      value = "0.0.0.0"
+    }
+  ]
 }

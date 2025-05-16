@@ -108,6 +108,12 @@ variable "kubeconfig_path" {
   description = "The path to save the kubeconfig to"
 }
 
+variable "docker_credentials" {
+  type        = string
+  default     = ""
+  description = "Get Docker credentials for your container registry"
+}
+
 variable "node_pools" {
   type = map(object({
     name       = optional(string)
