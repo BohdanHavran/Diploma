@@ -1,6 +1,6 @@
 resource "digitalocean_kubernetes_cluster" "this" {
   count                = var.enabled ? 1 : 0
-  name                 = format("%s-cluster", module.labels.id)
+  name                 = "${var.name}-cluster"
   region               = var.region
   version              = var.cluster_version
   vpc_uuid             = var.vpc_uuid
