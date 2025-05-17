@@ -25,7 +25,7 @@ jobs:
           token: ${{ secrets.DO_ACCESS_TOKEN }}
 
       - name: Log in to DO Container Registry
-        run: doctl registry login --expiry-seconds 600
+        run: doctl registry login --expiry-seconds 900
 
       - name: Extract short SHA
         id: vars
@@ -33,7 +33,7 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t $REGISTRY/$IMAGE_NAME:${SHORT_SHA} .
+          docker build -t $REGISTRY/${{ github.ref_name }}:${SHORT_SHA} .
 
       - name: Install dive
         run: |
@@ -44,8 +44,8 @@ jobs:
         env:
           CI: true
         run: |
-          dive $REGISTRY/$IMAGE_NAME:${SHORT_SHA} --ci
+          dive $REGISTRY/${{ github.ref_name }}:${SHORT_SHA} --ci
 
       - name: Push Docker images
         run: |
-          docker push $REGISTRY/$IMAGE_NAME:${SHORT_SHA}
+          docker push $REGISTRY/${{ github.ref_name }}:${SHORT_SHA}
