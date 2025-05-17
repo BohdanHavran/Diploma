@@ -1,0 +1,51 @@
+name: Build, Test and Push Docker image to DigitalOcean
+
+on:
+  push:
+    branches:
+      - frontend
+      - backend
+  pull_request:
+
+env:
+  REGISTRY: ${{ secrets.DOCKER_REGISTRY }}
+  IMAGE_NAME: ${{ secrets.IMAGE_NAME }}
+
+jobs:
+  build-test-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DO_ACCESS_TOKEN }}
+
+      - name: Log in to DO Container Registry
+        run: doctl registry login --expiry-seconds 600
+
+      - name: Extract short SHA
+        id: vars
+        run: echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+      - name: Build Docker image
+        run: |
+          docker build -t $REGISTRY/$IMAGE_NAME:${SHORT_SHA} .
+
+      - name: Install dive
+        run: |
+          wget https://github.com/wagoodman/dive/releases/download/v0.12.0/dive_0.12.0_linux_amd64.deb
+          sudo dpkg -i dive_0.12.0_linux_amd64.deb
+
+      - name: Analyze image with dive
+        env:
+          CI: true
+        run: |
+          dive $REGISTRY/$IMAGE_NAME:${SHORT_SHA} --ci
+
+      - name: Push Docker images
+        run: |
+          docker push $REGISTRY/$IMAGE_NAME:${SHORT_SHA}
