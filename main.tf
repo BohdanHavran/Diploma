@@ -3,7 +3,6 @@ resource "digitalocean_project" "pharmacy" {
   purpose     = "Operational / Developer tooling"
   resources = [
     module.k8s.urn[0],
-    module.vpc.vpc_urn,
     module.mysql.database_cluster_urn[0]
   ]
   is_default  = "true"
