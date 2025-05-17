@@ -11,8 +11,8 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: 'git@github.com:BohdanHavran/Diploma.git'
-    path: pharmacy
+    repoURL: 'https://github.com/BohdanHavran/Diploma.git'
+    path: app
     targetRevision: k8s
   destination:
     server: 'https://kubernetes.default.svc'

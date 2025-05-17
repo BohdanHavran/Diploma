@@ -1,7 +1,7 @@
 resources:
   - ./app
   # - clusterissuer.yml
-  - backend.tml
+  - backend.yml
   - frontend.yml
   - ingress.yml
 
