@@ -24,7 +24,7 @@ module "container-registry" {
   name                   = "pharmacy"
   environment            = "prod"
   region                 = "fra1"
-  subscription_tier_slug = "starter"
+  subscription_tier_slug = "basic"
 }
 
 module "k8s" {
