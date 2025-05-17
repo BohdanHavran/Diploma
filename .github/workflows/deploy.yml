@@ -12,7 +12,7 @@ env:
   IMAGE_NAME: ${{ secrets.IMAGE_NAME }}
 
 jobs:
-  build-test-push:
+  Deploy:
     runs-on: ubuntu-latest
 
     steps:
