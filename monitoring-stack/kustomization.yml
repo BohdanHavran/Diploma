@@ -1,0 +1,21 @@
+resources:
+  - ./app
+  # - clusterissuer.yml
+  # - backend.yml
+  # - frontend.yml
+  # - ingress.yml
+
+helmCharts:
+  - name: monitoring-stack
+    releaseName: kube-prometheus-stack
+    repo: https://prometheus-community.github.io
+    namespace: monitoring-stack
+    version: 10.2.1
+    valuesFile: values.yml
+
+  # - name: flowable
+  #   releaseName: flowable
+  #   repo: https://flowable.github.io/helm/
+  #   namespace: business-processes
+  #   version: 6.8.0
+  #   valuesFile: flowable-values.yml

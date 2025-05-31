@@ -1,0 +1,22 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: monitoring-stack
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  labels:
+    name: monitoring-stack
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/BohdanHavran/Diploma.git'
+    path: monitoring-stack
+    targetRevision: k8s
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: monitoring-stack
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

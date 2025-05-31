@@ -1,0 +1,4 @@
+namespace: pharmacy
+
+resources:
+  - namespace.yml
