@@ -4,8 +4,8 @@ metadata:
   name: app-server-ingress
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-frontend
-    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
-    nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: 'true'
+    nginx.ingress.kubernetes.io/use-regex: 'true'
 spec:
   ingressClassName: nginx
   rules:
@@ -30,8 +30,8 @@ metadata:
   name: api-server-ingress
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-backend
-    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
-    nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: 'true'
+    nginx.ingress.kubernetes.io/use-regex: 'true'
 spec:
   ingressClassName: nginx
   rules:
