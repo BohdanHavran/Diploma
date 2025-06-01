@@ -1,4 +1,4 @@
-namespace: pharmacy
+namespace: monitoring-stack
 
 resources:
   - namespace.yml

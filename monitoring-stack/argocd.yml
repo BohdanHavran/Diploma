@@ -9,7 +9,7 @@ metadata:
   labels:
     name: monitoring-stack
 spec:
-  project: default
+  project: monitoring-stack
   source:
     repoURL: 'https://github.com/BohdanHavran/Diploma.git'
     path: monitoring-stack
