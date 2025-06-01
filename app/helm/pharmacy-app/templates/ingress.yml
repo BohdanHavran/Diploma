@@ -4,7 +4,7 @@ kind: Ingress
 metadata:
   name: {{ .Values.frontend.ingress.name }}
   annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-{{ .Values.frontend.deployment.name }}
+    cert-manager.io/cluster-issuer: {{ .Values.issuer.name }}
     nginx.ingress.kubernetes.io/ssl-redirect: 'true'
     nginx.ingress.kubernetes.io/use-regex: 'true'
 spec:
@@ -32,7 +32,7 @@ kind: Ingress
 metadata:
   name: {{ .Values.backend.ingress.name }}
   annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-{{ .Values.backend.deployment.name }}
+    cert-manager.io/cluster-issuer: {{ .Values.issuer.name }}
     nginx.ingress.kubernetes.io/ssl-redirect: 'true'
     nginx.ingress.kubernetes.io/use-regex: 'true'
 spec:

@@ -54,3 +54,8 @@ frontend:
     email: diploma@gmail.com
     secretName: app-server-tls
   
+issuer:
+  create: true
+  name: letsencrypt-pharmacy
+  email: diploma@gmail.com
+  secretName: letsencrypt-pharmacy
