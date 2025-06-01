@@ -16,6 +16,17 @@ backend:
       limits:
         cpu: 200m
         memory: 256Mi
+  hpa:
+    enabled: true
+    metadata:
+      serverAddress: http://monitoring-stack-kube-prom-prometheus.monitoring-stack:9090
+      metricName: container_cpu_usage
+      query: sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate5m{namespace="{{ .Release.Namespace }}", pod=~"{{ $comp.deployment.name }}", container!=""}) by (container)
+      threshold: 
+      ignoreNullValues: false
+    pollingInterval: 5
+    minReplicas: 1
+    maxReplicas: 5
 
   service:
     enabled: true
@@ -51,6 +62,17 @@ frontend:
       limits:
         cpu: 200m
         memory: 256Mi
+  hpa:
+    enabled: true
+    metadata:
+      serverAddress: http://monitoring-stack-kube-prom-prometheus.monitoring-stack:9090
+      metricName: container_cpu_usage
+      query: sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate5m{namespace="{{ .Release.Namespace }}", pod=~"{{ $comp.deployment.name }}", container!=""}) by (container)
+      threshold: 
+      ignoreNullValues: false
+    pollingInterval: 5
+    minReplicas: 1
+    maxReplicas: 5
 
   service:
     enabled: true

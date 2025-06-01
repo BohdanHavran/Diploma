@@ -1,0 +1,24 @@
+{{- range $component := list "backend" "frontend" }}
+{{- $comp := index $.Values $component }}
+{{- if $comp.hpa.enabled }}
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: {{ $comp.deployment.name }}-scaler
+spec:
+  scaleTargetRef:
+    name: {{ $comp.deployment.name }}
+  minReplicaCount: {{ $comp.hpa.minReplicas }}
+  maxReplicaCount: {{ $comp.hpa.maxReplicas }}
+  pollingInterval: {{ $comp.hpa.pollingInterval }}
+  triggers:
+    - type: prometheus
+      metadata:
+        serverAddress: {{ $comp.hpa.metadata.serverAddress }}
+        metricName: {{ $comp.hpa.metadata.metricName }}
+        query: {{ $comp.hpa.metadata.query }}
+        threshold: {{ $comp.hpa.metadata.threshold }}
+        ignoreNullValues: "{{ $comp.hpa.metadata.ignoreNullValues }}"
+---
+{{- end }}
+{{- end }}
