@@ -5,18 +5,21 @@ apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
 metadata:
   name: {{ $comp.deployment.name }}-scaler
+  namespace: {{ $.Release.Namespace }}
 spec:
-  scaleTargetRef:
-    name: {{ $comp.deployment.name }}
   minReplicaCount: {{ $comp.hpa.minReplicas }}
   maxReplicaCount: {{ $comp.hpa.maxReplicas }}
   pollingInterval: {{ $comp.hpa.pollingInterval }}
+  scaleTargetRef:
+    apiVersion:    apps/v1
+    kind:          Deployment
+    name:          {{ $comp.deployment.name }}
   triggers:
     - type: prometheus
       metadata:
         serverAddress: {{ $comp.hpa.metadata.serverAddress }}
         metricName: {{ $comp.hpa.metadata.metricName }}
-        query: {{ $comp.hpa.metadata.query }}
+        query: sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate5m{namespace="{{ .Release.Namespace }}", pod=~"{{ $comp.deployment.name }}", container!=""}) by (container)
         threshold: {{ $comp.hpa.metadata.threshold }}
         ignoreNullValues: "{{ $comp.hpa.metadata.ignoreNullValues }}"
 ---
