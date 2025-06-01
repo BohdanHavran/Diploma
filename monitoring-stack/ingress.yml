@@ -24,3 +24,30 @@ spec:
   - hosts:
     - grafana.diplom.dns.army
     secretName: grafana-server-tls
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: prometheus-server-ingress
+  namespace: monitoring-stack
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-grafana
+    nginx.ingress.kubernetes.io/ssl-redirect: 'true'
+    nginx.ingress.kubernetes.io/use-regex: 'true'
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: prometheus.diplom.dns.army
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: monitoring-stack-kube-prom-prometheus
+            port:
+              name: http-web
+  tls:
+  - hosts:
+    - prometheus.diplom.dns.army
+    secretName: prometheus-server-tls
