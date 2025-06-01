@@ -1,43 +1,43 @@
-{{- if .Values.backend.deployment.enabled }}
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: {{ .Values.backend.deployment.name }}
-spec:
-  replicas: {{ .Values.backend.deployment.replicas }}
-  selector:
-    matchLabels:
-      app: {{ .Values.backend.deployment.name }}
-  template:
-    metadata:
-      labels:
-        app: {{ .Values.backend.deployment.name }}
-    spec:
-      containers:
-      - name: {{ .Values.backend.deployment.name }}
-        image: {{ .Values.backend.deployment.containers.image }}
-        ports:
-        - containerPort: {{ .Values.backend.deployment.containers.ports.containerPort }}
-      resources:
-        requests:
-          cpu: {{ .Values.backend.deployment.resources.requests.cpu }}
-          memory: {{ .Values.backend.deployment.resources.requests.memory }}
-        limits:
-          cpu: {{ .Values.backend.deployment.resources.limits.cpu }}
-          memory: {{ .Values.backend.deployment.resources.limits.memory }}
-{{- end }} 
----
-{{- if .Values.backend.service.enabled }}
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ .Values.backend.service.name }}
-spec:
-  selector:
-    app: {{ .Values.backend.deployment.name }}
-  ports:
-    - name: {{ .Values.backend.service.ports.name }}
-      protocol: {{ .Values.backend.service.ports.protocol }}
-      port: {{ .Values.backend.service.ports.port }}
-      targetPort: {{ .Values.backend.service.ports.targetPort }}
-{{- end }} 
+# {{- if .Values.backend.deployment.enabled }}
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: {{ .Values.backend.deployment.name }}
+# spec:
+#   replicas: {{ .Values.backend.deployment.replicas }}
+#   selector:
+#     matchLabels:
+#       app: {{ .Values.backend.deployment.name }}
+#   template:
+#     metadata:
+#       labels:
+#         app: {{ .Values.backend.deployment.name }}
+#     spec:
+#       containers:
+#       - name: {{ .Values.backend.deployment.name }}
+#         image: {{ .Values.backend.deployment.containers.image }}
+#         ports:
+#         - containerPort: {{ .Values.backend.deployment.containers.ports.containerPort }}
+#       resources:
+#         requests:
+#           cpu: {{ .Values.backend.deployment.resources.requests.cpu }}
+#           memory: {{ .Values.backend.deployment.resources.requests.memory }}
+#         limits:
+#           cpu: {{ .Values.backend.deployment.resources.limits.cpu }}
+#           memory: {{ .Values.backend.deployment.resources.limits.memory }}
+# {{- end }} 
+# ---
+# {{- if .Values.backend.service.enabled }}
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: {{ .Values.backend.service.name }}
+# spec:
+#   selector:
+#     app: {{ .Values.backend.deployment.name }}
+#   ports:
+#     - name: {{ .Values.backend.service.ports.name }}
+#       protocol: {{ .Values.backend.service.ports.protocol }}
+#       port: {{ .Values.backend.service.ports.port }}
+#       targetPort: {{ .Values.backend.service.ports.targetPort }}
+# {{- end }} 

@@ -1,0 +1,29 @@
+{{- range $component := list "backend" "frontend" }}
+{{- $comp := index $.Values $component }}
+{{- if $comp.deployment.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $comp.deployment.name }}
+spec:
+  replicas: {{ $comp.deployment.replicas }}
+  selector:
+    matchLabels:
+      app: {{ $comp.deployment.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ $comp.deployment.name }}
+    spec:
+      containers:
+        - name: {{ $comp.deployment.name }}
+          image: {{ $comp.deployment.containers.image }}
+          ports:
+            - containerPort: {{ $comp.deployment.containers.ports.containerPort }}
+          {{- with $comp.deployment.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+---
+{{- end }}
+{{- end }}
