@@ -10,7 +10,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-  - host: argocd.diplom.dns.army
+  - host: grafana.diplom.dns.army
     http:
       paths:
       - path: /
