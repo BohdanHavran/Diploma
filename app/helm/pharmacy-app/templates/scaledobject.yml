@@ -19,7 +19,7 @@ spec:
       metadata:
         serverAddress: {{ $comp.hpa.metadata.serverAddress }}
         metricName: {{ $comp.hpa.metadata.metricName }}
-        query: sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate5m{namespace="{{ .Release.Namespace }}", pod=~"{{ $comp.deployment.name }}", container!=""}) by (container)
+        query: sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate5m{namespace="{{ $.Release.Namespace }}", pod=~"{{ $comp.deployment.name }}", container!=""}) by (container)
         threshold: {{ $comp.hpa.metadata.threshold }}
         ignoreNullValues: "{{ $comp.hpa.metadata.ignoreNullValues }}"
 ---
