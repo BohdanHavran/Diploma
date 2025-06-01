@@ -5,8 +5,8 @@ metadata:
   namespace: monitoring-stack
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-grafana
-    nginx.ingress.kubernetes.io/ssl-passthrough: "true"
-    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+    nginx.ingress.kubernetes.io/ssl-redirect: 'true'
+    nginx.ingress.kubernetes.io/use-regex: 'true'
 spec:
   ingressClassName: nginx
   rules:
