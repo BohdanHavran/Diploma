@@ -1,0 +1,56 @@
+backend:
+  enabled: true
+
+  deployment:
+    enabled: true
+    name: backend
+    replicas: 1
+    containers:
+      image: registry.digitalocean.com/pharmacy/backend:ec83f8e
+      ports:
+        containerPort: 5000
+
+  service:
+    enabled: true
+    name: api-service
+    ports:
+      name: http
+      protocol: TCP
+      port: 80
+      targetPort: 5000
+
+  ingress:
+    enabled: true
+    name: api-server-ingress
+    host: api.diplom.dns.army
+    email: diploma@gmail.com
+    secretName: api-server-tls
+
+frontend:
+  enabled: true
+
+  deployment:
+    enabled: true
+    name: frontend
+    replicas: 1
+    containers:
+      image: registry.digitalocean.com/pharmacy/frontend:7bc9d05
+      ports:
+        containerPort: 80
+
+  service:
+    enabled: true
+    name: app-service
+    ports:
+      name: http
+      protocol: TCP
+      port: 80
+      targetPort: 80
+
+  ingress:
+    enabled: true
+    name: app-server-ingress
+    host: diplom.dns.army
+    email: diploma@gmail.com
+    secretName: app-server-tls
+  

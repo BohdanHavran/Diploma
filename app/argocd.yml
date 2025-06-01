@@ -9,7 +9,7 @@ metadata:
   labels:
     name: pharmacy
 spec:
-  project: default
+  project: pharmacy
   source:
     repoURL: 'https://github.com/BohdanHavran/Diploma.git'
     path: app

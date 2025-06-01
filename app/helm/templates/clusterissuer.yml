@@ -1,0 +1,35 @@
+{{- if .Values.backend.ingress.enabled }}
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-{{ .Values.backend.deployment.name }}
+  namespace: {{ $.Release.Namespace }}
+spec:
+  acme:
+    email: {{ .Values.backend.ingress.email }}
+    server: https://acme-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: letsencrypt-{{ .Values.backend.deployment.name }}
+    solvers:
+      - http01:
+          ingress:
+            class: nginx
+{{- end }}
+---
+{{- if .Values.frontend.ingress.enabled }}
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-{{ .Values.frontend.deployment.name }}
+  namespace: {{ $.Release.Namespace }}
+spec:
+  acme:
+    email: {{ .Values.frontend.ingress.email }}
+    server: https://acme-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: letsencrypt-{{ .Values.frontend.deployment.name }}
+    solvers:
+      - http01:
+          ingress:
+            class: nginx
+{{- end }}

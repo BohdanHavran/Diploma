@@ -1,17 +1,18 @@
 resources:
   - ./app
-  - clusterissuer.yml
-  - backend.yml
-  - frontend.yml
-  - ingress.yml
 
-# helmCharts:
-#   - name: camunda-platform
-#     releaseName: camunda
-#     repo: https://helm.camunda.io
-#     namespace: business-processes
-#     version: 10.2.1
-#     valuesFile: camunda-values.yml
+namespace: pharmacy
+
+helmGlobals:
+  chartHome: ./helm
+
+helmCharts:
+  - releaseName: pharmacy
+    namespace: pharmacy
+    name: pharmacy-app
+    version: 0.1.0
+    includeCRDs: false
+    valuesFile: values.yml
 
   # - name: flowable
   #   releaseName: flowable
