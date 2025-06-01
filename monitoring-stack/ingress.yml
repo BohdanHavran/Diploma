@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: grafana-server-ingress
+  namespace: monitoring-stack
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-grafana
+    nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: argocd.diplom.dns.army
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: monitoring-stack-grafana
+            port:
+              name: https
+  tls:
+  - hosts:
+    - grafana.diplom.dns.army
+    secretName: grafana-server-tls

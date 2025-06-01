@@ -1,9 +1,7 @@
 resources:
   - ./app
-  # - clusterissuer.yml
-  # - backend.yml
-  # - frontend.yml
-  # - ingress.yml
+  - clusterissuer.yml
+  - ingress.yml
 
 helmCharts:
   - name: kube-prometheus-stack
