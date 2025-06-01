@@ -9,6 +9,13 @@ backend:
       image: registry.digitalocean.com/pharmacy/backend:ec83f8e
       ports:
         containerPort: 5000
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
 
   service:
     enabled: true
@@ -37,6 +44,13 @@ frontend:
       image: registry.digitalocean.com/pharmacy/frontend:7bc9d05
       ports:
         containerPort: 80
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
 
   service:
     enabled: true
@@ -53,10 +67,9 @@ frontend:
     host: diplom.dns.army
     email: diploma@gmail.com
     secretName: app-server-tls
-
+  
 issuer:
   create: true
   name: letsencrypt-pharmacy
   email: diploma@gmail.com
   secretName: letsencrypt-pharmacy
-  

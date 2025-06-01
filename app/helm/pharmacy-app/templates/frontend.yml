@@ -18,6 +18,13 @@ spec:
         image: {{ .Values.frontend.deployment.containers.image }}
         ports:
         - containerPort: {{ .Values.frontend.deployment.containers.ports.containerPort }}
+      resources:
+        requests:
+          cpu: {{ .Values.frontend.deployment.resources.requests.cpu }}
+          memory: {{ .Values.frontend.deployment.resources.requests.memory }}
+        limits:
+          cpu: {{ .Values.frontend.deployment.resources.limits.cpu }}
+          memory: {{ .Values.frontend.deployment.resources.limits.memory }}
 {{- end }} 
 ---
 {{- if .Values.frontend.service.enabled }}
