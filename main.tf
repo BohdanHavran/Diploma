@@ -3,7 +3,8 @@ resource "digitalocean_project" "pharmacy" {
   purpose     = "Operational / Developer tooling"
   resources = [
     module.k8s.urn[0],
-    module.mysql.database_cluster_urn[0]
+    module.mysql.database_cluster_urn[0],
+    module.pharmacy_bucket.bucket_urn
   ]
   is_default  = "true"
 }
@@ -89,4 +90,12 @@ module "mysql" {
       value = "0.0.0.0"
     }
   ]
+}
+
+module "pharmacy_bucket" {
+  source        = "./modules/digitalocean/bucket"
+  bucket_name   = "pharmacy-bucket"
+  acl           = "private"
+  force_destroy = false
+  region        = "fra1"
 }
