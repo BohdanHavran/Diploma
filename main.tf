@@ -93,7 +93,7 @@ module "mysql" {
 }
 
 module "pharmacy_bucket" {
-  source        = "./modules/digitalocean/bucket"
+  source        = "./module/bucket"
   bucket_name   = "pharmacy-bucket"
   acl           = "private"
   force_destroy = false
