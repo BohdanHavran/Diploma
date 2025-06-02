@@ -1,0 +1,45 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: pharmacy
+  namespace: argocd
+spec:
+  clusterResourceWhitelist:
+  - group: '*'
+    kind: '*'
+  destinations:
+  - namespace: '!kube-system'
+    server: '*'
+  - namespace: '!kube-monitoring'
+    server: '*'
+  - namespace: '!kube-public'
+    server: '*'
+  - namespace: '!kube-node-lease'
+    server: '*'
+  - namespace: pharmacy
+    server: '*'
+  sourceRepos:
+  - https://github.com/BohdanHavran/Diploma.git
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: monitoring-stack
+  namespace: argocd
+spec:
+  clusterResourceWhitelist:
+  - group: '*'
+    kind: '*'
+  destinations:
+  - namespace: 'kube-system'
+    server: '*'
+  - namespace: '!kube-monitoring'
+    server: '*'
+  - namespace: '!kube-public'
+    server: '*'
+  - namespace: '!kube-node-lease'
+    server: '*'
+  - namespace: monitoring-stack
+    server: '*'
+  sourceRepos:
+  - https://github.com/BohdanHavran/Diploma.git

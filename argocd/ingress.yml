@@ -4,7 +4,7 @@ metadata:
   name: argocd-server-ingress
   namespace: argocd
   annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-nginx
+    cert-manager.io/cluster-issuer: letsencrypt-argocd
     nginx.ingress.kubernetes.io/ssl-passthrough: "true"
     nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
 spec:

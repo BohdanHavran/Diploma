@@ -24597,6 +24597,14 @@ subjects:
 ---
 apiVersion: v1
 data:
+  admin.enabled: "true"
+  application.instanceLabelKey: "argocd.argoproj.io/instance"
+  exec.enabled: "true"
+  exec.shells: "bash,sh"
+  kustomize.buildOptions: "--enable-helm"
+  server.rbac.log.enforce.enable: "true"
+  timeout.hard.reconciliation: "0"
+  timeout.reconciliation: "180s"
   resource.customizations.ignoreResourceUpdates.ConfigMap: |
     jqPathExpressions:
       # Ignore the cluster-autoscaler status
