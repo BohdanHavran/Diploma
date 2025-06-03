@@ -20,6 +20,8 @@ env:
 jobs:
   Docker-Build:
     runs-on: ubuntu-latest
+    outputs:
+      short_sha: ${{ steps.vars.outputs.short_sha }}
 
     steps:
       - name: Checkout code
@@ -35,11 +37,13 @@ jobs:
 
       - name: Extract short SHA
         id: vars
-        run: echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+        run: echo "short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
       - name: Build Docker image
         run: |
           docker build -t $REGISTRY/${{ github.ref_name }}:${SHORT_SHA} .
+        env:
+          SHORT_SHA: ${{ steps.vars.outputs.short_sha }}
 
       - name: Install dive
         run: |
@@ -49,12 +53,15 @@ jobs:
       - name: Analyze image with dive
         env:
           CI: true
+          SHORT_SHA: ${{ steps.vars.outputs.SHORT_SHA }}
         run: |
           dive $REGISTRY/${{ github.ref_name }}:${SHORT_SHA} --ci
 
       - name: Push Docker images
         run: |
           docker push $REGISTRY/${{ github.ref_name }}:${SHORT_SHA}
+        env:
+          SHORT_SHA: ${{ steps.vars.outputs.SHORT_SHA }}
 
   K8s-Deploy:
     needs: Docker-Build
@@ -73,12 +80,9 @@ jobs:
           git config --global user.name github.actor
           git config --global user.email github.actor@github.com
 
-      - name: Extract short SHA
-        id: vars
-        run: echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-
       - name: Update Kubernetes configuration
         run: |
+          SHORT_SHA=${{ needs.Docker-Build.outputs.short_sha }}
           sed -i "s|$REGISTRY/${{ github.ref_name }}:[^\"']*|$REGISTRY/${{ github.ref_name }}:${SHORT_SHA}|g" app/values.yml
 
       - name: Push updates and trigger ArgoCD
