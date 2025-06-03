@@ -7,11 +7,18 @@ on:
       - backend
   pull_request:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   REGISTRY: ${{ secrets.DOCKER_REGISTRY }}
+  ARGO_CD_TOKEN: ${{ secrets.ARGO_CD_TOKEN }}
+  ApplicationName: ${{ secrets.APPLICATIONNAME }}
+  ArgoCDServer: ${{ secrets.ARGOCDSERVER }}
 
 jobs:
-  Deploy:
+  Docker-Build:
     runs-on: ubuntu-latest
 
     steps:
@@ -48,3 +55,36 @@ jobs:
       - name: Push Docker images
         run: |
           docker push $REGISTRY/${{ github.ref_name }}:${SHORT_SHA}
+
+  K8s-Deploy:
+    needs: Docker-Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          repository: BohdanHavran/Diploma
+          ref: k8s
+          ssh-key: ${{ secrets.DEPLOY_SSH_KEY }}
+
+      - name: Configure git
+        run: |
+          git config --global user.name github.actor
+          git config --global user.email github.actor@github.com
+
+      - name: Update Kubernetes configuration
+        run: |
+          sed -i "s|$REGISTRY/${{ github.ref_name }}:[^\"']*|$REGISTRY/${{ github.ref_name }}:${SHORT_SHA}|g" app/values.yml
+
+      - name: Push updates and trigger ArgoCD
+        run: |
+          git diff-index --quiet HEAD || {
+            git add .
+            git commit -m "feat(github.actor): $ApplicationName ${{ github.ref_name }} release"
+            git pull origin k8s --rebase
+            git push origin k8s
+          }
+          curl -k -X POST -H "Authorization: Bearer $ARGO_CD_TOKEN" \
+            -H "Content-Type: application/json" \
+            https://${ArgoCDServer}/api/v1/applications/${ApplicationName}/sync
