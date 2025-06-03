@@ -73,6 +73,10 @@ jobs:
           git config --global user.name github.actor
           git config --global user.email github.actor@github.com
 
+      - name: Extract short SHA
+        id: vars
+        run: echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
       - name: Update Kubernetes configuration
         run: |
           sed -i "s|$REGISTRY/${{ github.ref_name }}:[^\"']*|$REGISTRY/${{ github.ref_name }}:${SHORT_SHA}|g" app/values.yml
