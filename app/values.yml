@@ -11,11 +11,11 @@ backend:
         containerPort: 5000
     resources:
       requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
         cpu: 100m
         memory: 128Mi
-      limits:
-        cpu: 200m
-        memory: 256Mi
   hpa:
     enabled: true
     metadata:
@@ -57,11 +57,11 @@ frontend:
         containerPort: 80
     resources:
       requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
         cpu: 100m
         memory: 128Mi
-      limits:
-        cpu: 200m
-        memory: 256Mi
   hpa:
     enabled: true
     metadata:
