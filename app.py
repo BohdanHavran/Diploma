@@ -24,7 +24,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 @app.route('/products/<path:filename>')
 def get_photo(filename):
     try:
-        url = presigned_url(f"/products/{filename}")
+        url = presigned_url(f"products/{filename}")
         return redirect(url), 302
     except Exception as e:
         return jsonify({"error": f"Failed to generate pre-signed URL: {str(e)}"}), 500
