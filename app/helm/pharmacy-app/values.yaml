@@ -41,7 +41,6 @@ backend:
     pollingInterval: 5
     minReplicas: 1
     maxReplicas: 5
-
   service:
     enabled: true
     name: api-service
@@ -50,7 +49,6 @@ backend:
       protocol: TCP
       port: 80
       targetPort: 5000
-
   ingress:
     enabled: true
     name: api-server-ingress

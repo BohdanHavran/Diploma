@@ -16,6 +16,20 @@ backend:
       limits:
         cpu: 100m
         memory: 128Mi
+  secret:
+    JWT_SECRET_KEY: ZWJlMjFkMmU5YWZmNzQ5ZTY1M2FkYzcxNTM3MTg2YTZkZWQ5MDljNDNjNzI5NDhjZmFmMmY2YzZjY2RhZGZhNQ==
+    JWT_ACCESS_TOKEN_EXPIRES: MTgwMA==
+    JWT_REFRESH_TOKEN_EXPIRES: ODY0MDA=
+    DB_HOST: cHJpdmF0ZS1waGFybWFjeS1jbHVzdGVyLWRvLXVzZXItMjI0MzI2NDMtMC5kLmRiLm9uZGlnaXRhbG9jZWFuLmNvbQ==
+    DB_PORT: MjUwNjA=
+    DB_USER: UGhhcm1hY3k=
+    DB_PASSWORD: QVZOU19YbnBySDhCWE1vNUhUVHhJTUhr
+    DB_NAME: UGhhcm1hY3k=
+    DO_SPACES_KEY: RE8wMEM4S0dMWU4yQ1U3VVBXOUs=
+    DO_SPACES_SECRET: REhxTmUrWE5VM0RERVpwSEJPWlROV2FPTHJadVo2RU5FNlhmRnlDMWQvaw==
+    DO_SPACES_REGION: ZnJhMQ==
+    DO_SPACES_ENDPOINT: aHR0cHM6Ly9mcmExLmRpZ2l0YWxvY2VhbnNwYWNlcy5jb20=
+    DO_SPACES_BUCKET: cGhhcm1hY3ktYnVja2V0
   hpa:
     enabled: true
     metadata:
@@ -27,7 +41,6 @@ backend:
     pollingInterval: 5
     minReplicas: 1
     maxReplicas: 5
-
   service:
     enabled: true
     name: api-service
@@ -36,7 +49,6 @@ backend:
       protocol: TCP
       port: 80
       targetPort: 5000
-
   ingress:
     enabled: true
     name: api-server-ingress
@@ -73,7 +85,6 @@ frontend:
     pollingInterval: 5
     minReplicas: 1
     maxReplicas: 5
-
   service:
     enabled: true
     name: app-service
@@ -82,7 +93,6 @@ frontend:
       protocol: TCP
       port: 80
       targetPort: 80
-
   ingress:
     enabled: true
     name: app-server-ingress
