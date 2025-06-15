@@ -255,8 +255,8 @@ def get_orders_route():
     user_id = request.args.get('user_id')
     orders = get_orders(user_id)
 
+    orders_list = []
     if orders:
-        orders_list = []
         for order in orders:
             order_data = {
                 "order_id": order[0],
@@ -266,7 +266,8 @@ def get_orders_route():
                 "rating": order[4]
             }
             orders_list.append(order_data)
-        return jsonify(orders_list), 200
+    
+    return jsonify(orders_list), 200
 
 @app.route('/api/orders/<int:order_id>', methods=['DELETE'])
 def remove_order_route(order_id):
