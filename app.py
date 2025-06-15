@@ -1,6 +1,4 @@
 from flask import Flask, request, jsonify, send_file, send_from_directory
-import boto3
-from botocore.exceptions import ClientError
 import os
 from flask_jwt_extended import (
     JWTManager, create_access_token, create_refresh_token,
@@ -10,7 +8,7 @@ from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 import hashlib
 from database import create_user, get_user, get_products, user_exists, add_new_product, update_existing_product, delete_product, add_review, get_reviews, approve_review, delete_review, get_orders, add_order, remove_order, clear_cart
-from image import save_image_from_base64
+from image import save_image_from_base64, presigned_url
 
 app = Flask(__name__)
 CORS(app)
@@ -26,14 +24,9 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 @app.route('/products/<path:filename>')
 def get_photo(filename):
     try:
-        # Generate a pre-signed URL for the private object
-        presigned_url = s3_client.generate_presigned_url(
-            'get_object',
-            Params={'Bucket': os.environ.get('DO_SPACES_BUCKET'), 'Key': filename},
-            ExpiresIn=3600  # URL valid for 1 hour
-        )
-        return redirect(presigned_url), 302
-    except ClientError as e:
+        url = presigned_url(filename)
+        return redirect(url), 302
+    except Exception as e:
         return jsonify({"error": f"Failed to generate pre-signed URL: {str(e)}"}), 500
 
 # Хешування пароля

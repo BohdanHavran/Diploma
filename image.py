@@ -6,19 +6,17 @@ import boto3
 from PIL import Image
 from botocore.exceptions import ClientError
 
+session = boto3.session.Session()
+s3_client = session.client(
+    's3',
+    region_name=os.environ.get('DO_SPACES_REGION'),
+    endpoint_url=os.environ.get('DO_SPACES_ENDPOINT'),
+    aws_access_key_id=os.environ.get('DO_SPACES_KEY'),
+    aws_secret_access_key=os.environ.get('DO_SPACES_SECRET')
+)
+
 def save_image_from_base64(base64_string, folder):
     try:
-        # Initialize boto3 client for DigitalOcean Spaces
-        session = boto3.session.Session()
-        s3_client = session.client(
-            's3',
-            region_name=os.environ.get('DO_SPACES_REGION'),
-            endpoint_url=os.environ.get('DO_SPACES_ENDPOINT'),
-            aws_access_key_id=os.environ.get('DO_SPACES_KEY'),
-            aws_secret_access_key=os.environ.get('DO_SPACES_SECRET')
-        )
-        
-        # Decode base64 string
         img_data = base64.b64decode(base64_string.split(',')[1] if ',' in base64_string else base64_string)
         
         # Generate unique filename
@@ -38,3 +36,15 @@ def save_image_from_base64(base64_string, folder):
         raise Exception(f"Failed to upload image to Spaces: {str(e)}")
     except Exception as e:
         raise Exception(f"Error processing image: {str(e)}")
+
+def presigned_url(filename):
+    try:
+        # Generate a pre-signed URL for the private object
+        presigned_url = s3_client.generate_presigned_url(
+            'get_object',
+            Params={'Bucket': os.environ.get('DO_SPACES_BUCKET'), 'Key': filename},
+            ExpiresIn=3600  # URL valid for 1 hour
+        )
+        return redirect(presigned_url), 302
+    except ClientError as e:
+        return jsonify({"error": f"Failed to generate pre-signed URL: {str(e)}"}), 500
