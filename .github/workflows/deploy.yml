@@ -7,12 +7,21 @@ on:
       - backend
   pull_request:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   REGISTRY: ${{ secrets.DOCKER_REGISTRY }}
+  ARGO_CD_TOKEN: ${{ secrets.ARGO_CD_TOKEN }}
+  ApplicationName: ${{ secrets.APPLICATIONNAME }}
+  ArgoCDServer: ${{ secrets.ARGOCDSERVER }}
 
 jobs:
-  Deploy:
+  Docker-Build:
     runs-on: ubuntu-latest
+    outputs:
+      short_sha: ${{ steps.vars.outputs.short_sha }}
 
     steps:
       - name: Checkout code
@@ -28,11 +37,17 @@ jobs:
 
       - name: Extract short SHA
         id: vars
-        run: echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+        run: echo "short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Generate .env
+        run: |
+          echo -e "REACT_APP_API_BASE_URL=${{ secrets.REACT_APP_API_BASE_URL }}"> .env
 
       - name: Build Docker image
         run: |
           docker build -t $REGISTRY/${{ github.ref_name }}:${SHORT_SHA} .
+        env:
+          SHORT_SHA: ${{ steps.vars.outputs.short_sha }}
 
       - name: Install dive
         run: |
@@ -42,9 +57,46 @@ jobs:
       - name: Analyze image with dive
         env:
           CI: true
+          SHORT_SHA: ${{ steps.vars.outputs.SHORT_SHA }}
         run: |
           dive $REGISTRY/${{ github.ref_name }}:${SHORT_SHA} --ci
 
       - name: Push Docker images
         run: |
           docker push $REGISTRY/${{ github.ref_name }}:${SHORT_SHA}
+        env:
+          SHORT_SHA: ${{ steps.vars.outputs.SHORT_SHA }}
+
+  K8s-Deploy:
+    needs: Docker-Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          repository: BohdanHavran/Diploma
+          ref: k8s
+          ssh-key: ${{ secrets.DEPLOY_SSH_KEY }}
+
+      - name: Configure git
+        run: |
+          git config --global user.name github.actor
+          git config --global user.email github.actor@github.com
+
+      - name: Update Kubernetes configuration
+        run: |
+          SHORT_SHA=${{ needs.Docker-Build.outputs.short_sha }}
+          sed -i "s|$REGISTRY/${{ github.ref_name }}:[^\"']*|$REGISTRY/${{ github.ref_name }}:${SHORT_SHA}|g" app/values.yml
+
+      - name: Push updates and trigger ArgoCD
+        run: |
+          git diff-index --quiet HEAD || {
+            git add .
+            git commit -m "feat(github.actor): $ApplicationName ${{ github.ref_name }} release"
+            git pull origin k8s --rebase
+            git push origin k8s
+          }
+          curl -k -X POST -H "Authorization: Bearer $ARGO_CD_TOKEN" \
+            -H "Content-Type: application/json" \
+            https://${ArgoCDServer}/api/v1/applications/${ApplicationName}/sync
