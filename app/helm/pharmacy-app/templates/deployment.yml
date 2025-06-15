@@ -16,6 +16,11 @@ spec:
       labels:
         app: {{ $comp.deployment.name }}
     spec:
+      tolerations:
+        - key: "name"
+          operator: "Equal"
+          value: "default"
+          effect: "NoSchedule"
       containers:
         - name: {{ $comp.deployment.name }}
           image: {{ $comp.deployment.containers.image }}
