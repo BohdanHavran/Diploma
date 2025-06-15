@@ -7,8 +7,8 @@ from flask_jwt_extended import (
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 import hashlib
-from database import create_user, get_user, get_products, user_exists, add_new_product, update_existing_product, delete_product, add_review, get_reviews, approve_review, delete_review, get_orders, add_order, remove_order, clear_cart
-from image import save_image_from_base64, presigned_url
+from database import create_user, get_user, get_products, user_exists, add_new_product, update_existing_product, delete_product, add_review, get_reviews, approve_review, delete_review, get_orders, add_order, remove_order, clear_cart, get_product_image_key
+from image import save_image_from_base64, presigned_url, delete_product_image
 
 app = Flask(__name__)
 CORS(app)
@@ -137,20 +137,24 @@ def update_product(id):
     description = data.get('description')
 
     try:
-        filename = None
+        filename_old = get_product_image_key(id)
+
+        filename_new = None
         if base64_image:
-            filename = save_image_from_base64(base64_image, app.config['UPLOAD_FOLDER'])
+            filename_new = save_image_from_base64(base64_image, app.config['UPLOAD_FOLDER'])
         
         update_existing_product(
             id, 
             name, 
-            filename,
+            filename_new,
             price, 
             products_count, 
             in_date, 
             short_description, 
             description
         )
+
+        delete_product_image(filename_old)
         return jsonify(message='Product updated successfully'), 200
     except Exception as e:
         return jsonify(error=str(e)), 400
@@ -161,8 +165,11 @@ def delete_product_api(id):
         product_id = id
         if not product_id:
             return jsonify({"error": "Product ID is required"}), 400
-        
+        filename = get_product_image_key(product_id)
+
         delete_product(product_id)
+
+        delete_product_image(filename)
         return jsonify({"message": "Product deleted successfully"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500

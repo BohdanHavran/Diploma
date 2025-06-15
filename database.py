@@ -77,6 +77,17 @@ def get_products():
     finally:
         connection.close()
 
+def get_product_image_key(product_id):
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            sql = "SELECT image FROM products WHERE id_products = %s"
+            cursor.execute(sql, (product_id,))
+            result = cursor.fetchone()
+            return result[0] if result else None
+    finally:
+        connection.close()
+
 # Оновлення функції для додавання товару
 def add_new_product(name, filename, price, products_count, in_date, short_description, description):
     connection = get_db_connection()
@@ -97,7 +108,6 @@ def add_new_product(name, filename, price, products_count, in_date, short_descri
             connection.commit()
     finally:
         connection.close()
-
 
 # Оновлення функції для оновлення товару
 def update_existing_product(id, name, filename, price, products_count, in_date, short_description, description):

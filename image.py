@@ -49,3 +49,13 @@ def presigned_url(filename):
         return presigned_url
     except ClientError as e:
         return jsonify({"error": f"Failed to generate pre-signed URL: {str(e)}"}), 500
+
+def delete_product_image(filename):
+    try:   
+        s3_client.delete_object(Bucket=os.environ.get('DO_SPACES_BUCKET'), Key=filename)
+
+        logger.info(f"Deleted image {filename} from DigitalOcean Spaces")
+    except ClientError as e:
+        logger.warning(f"Failed to delete image {filename} from Spaces: {str(e)}. Continuing with product deletion.")
+    except Exception as e:
+        logger.warning(f"Unexpected error deleting image {filename}: {str(e)}. Continuing with product deletion.")
