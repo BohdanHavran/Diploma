@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, send_file, send_from_directory
 import boto3
-from botocore.exceptions import ClientError, Config
+from botocore.exceptions import ClientError
 import os
 from flask_jwt_extended import (
     JWTManager, create_access_token, create_refresh_token,
