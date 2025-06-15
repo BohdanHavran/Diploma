@@ -18,7 +18,7 @@ app.config['JWT_REFRESH_TOKEN_EXPIRES'] = int(os.environ.get('JWT_REFRESH_TOKEN_
 
 jwt = JWTManager(app)
 
-UPLOAD_FOLDER = './products'
+UPLOAD_FOLDER = 'products'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 @app.route('/products/<path:filename>')
