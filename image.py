@@ -4,7 +4,7 @@ import uuid
 import base64
 import boto3
 from PIL import Image
-from botocore.client import Config
+from botocore.exceptions import ClientError
 
 def save_image_from_base64(base64_string, folder):
     try:
