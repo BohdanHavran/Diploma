@@ -1,4 +1,6 @@
 from flask import Flask, request, jsonify, send_file, send_from_directory
+import boto3
+from botocore.exceptions import ClientError, Config
 import os
 from flask_jwt_extended import (
     JWTManager, create_access_token, create_refresh_token,
@@ -27,13 +29,13 @@ def get_photo(filename):
         # Generate a pre-signed URL for the private object
         presigned_url = s3_client.generate_presigned_url(
             'get_object',
-            Params={'Bucket': SPACES_BUCKET, 'Key': filename},
+            Params={'Bucket': os.environ.get('DO_SPACES_BUCKET'), 'Key': filename},
             ExpiresIn=3600  # URL valid for 1 hour
         )
         return redirect(presigned_url), 302
     except ClientError as e:
         return jsonify({"error": f"Failed to generate pre-signed URL: {str(e)}"}), 500
-        
+
 # Хешування пароля
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
