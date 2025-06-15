@@ -1,5 +1,6 @@
 {{- range $component := list "backend" "frontend" }}
 {{- $comp := index $.Values $component }}
+{{- if $comp.enabled }}
 {{- if $comp.service.enabled }}
 apiVersion: v1
 kind: Service
@@ -14,5 +15,6 @@ spec:
       port: {{ $comp.service.ports.port }}
       targetPort: {{ $comp.service.ports.targetPort }}
 ---
+{{- end }}
 {{- end }}
 {{- end }}

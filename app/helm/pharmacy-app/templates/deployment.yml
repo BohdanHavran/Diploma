@@ -1,5 +1,6 @@
 {{- range $component := list "backend" "frontend" }}
 {{- $comp := index $.Values $component }}
+{{- if $comp.enabled }}
 {{- if $comp.deployment.enabled }}
 apiVersion: apps/v1
 kind: Deployment
@@ -20,10 +21,19 @@ spec:
           image: {{ $comp.deployment.containers.image }}
           ports:
             - containerPort: {{ $comp.deployment.containers.ports.containerPort }}
+          env:
+            {{- range $key, $value := $comp.secret }}
+            - name: {{ $key }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ printf "%s-secret" $component }}
+                  key: {{ $key }}
+            {{- end }}
           {{- with $comp.deployment.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
 ---
+{{- end }}
 {{- end }}
 {{- end }}

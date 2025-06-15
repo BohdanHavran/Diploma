@@ -1,5 +1,6 @@
 {{- range $component := list "backend" "frontend" }}
 {{- $comp := index $.Values $component }}
+{{- if $comp.enabled }}
 {{- if $comp.hpa.enabled }}
 apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
@@ -23,5 +24,6 @@ spec:
         threshold: '{{ $comp.hpa.metadata.threshold }}'
         ignoreNullValues: "{{ $comp.hpa.metadata.ignoreNullValues }}"
 ---
+{{- end }}
 {{- end }}
 {{- end }}
