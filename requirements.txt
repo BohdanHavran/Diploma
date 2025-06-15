@@ -4,4 +4,4 @@ flask-cors
 pymysql
 pillow
 gunicorn
-boto3==1.24.59
+boto3
