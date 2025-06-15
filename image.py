@@ -45,6 +45,6 @@ def presigned_url(filename):
             Params={'Bucket': os.environ.get('DO_SPACES_BUCKET'), 'Key': filename},
             ExpiresIn=3600  # URL valid for 1 hour
         )
-        return redirect(presigned_url), 302
+        return presigned_url
     except ClientError as e:
         return jsonify({"error": f"Failed to generate pre-signed URL: {str(e)}"}), 500
