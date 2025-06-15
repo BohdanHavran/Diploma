@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify, send_file, send_from_directory
+import os
 from flask_jwt_extended import (
     JWTManager, create_access_token, create_refresh_token,
     jwt_required, get_jwt_identity
@@ -11,24 +12,48 @@ from image import save_image_from_base64
 
 app = Flask(__name__)
 CORS(app)
-app.config['JWT_SECRET_KEY'] = 'ebe21d2e9aff749e653adc71537186a6ded909c43c72948cfaf2f6c6ccdadfa5'
-app.config['JWT_ACCESS_TOKEN_EXPIRES'] = 1800
-app.config['JWT_REFRESH_TOKEN_EXPIRES'] = 86400 
 
+# Configure JWT
+app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY')
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = int(os.environ.get('JWT_ACCESS_TOKEN_EXPIRES', 1800))
+app.config['JWT_REFRESH_TOKEN_EXPIRES'] = int(os.environ.get('JWT_REFRESH_TOKEN_EXPIRES', 86400))
 jwt = JWTManager(app)
 
-UPLOAD_FOLDER = './products'
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+# Configure DigitalOcean Spaces
+SPACES_KEY = os.environ.get('DO_SPACES_KEY')
+SPACES_SECRET = os.environ.get('DO_SPACES_SECRET')
+SPACES_REGION = os.environ.get('DO_SPACES_REGION')
+SPACES_ENDPOINT = os.environ.get('DO_SPACES_ENDPOINT')
+SPACES_BUCKET = os.environ.get('DO_SPACES_BUCKET')
+
+# Initialize boto3 client for DigitalOcean Spaces
+session = boto3.session.Session()
+s3_client = session.client(
+    's3',
+    region_name=SPACES_REGION,
+    endpoint_url=SPACES_ENDPOINT,
+    aws_access_key_id=SPACES_KEY,
+    aws_secret_access_key=SPACES_SECRET
+)
 
 @app.route('/products/<path:filename>')
 def get_photo(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename), 200
+    try:
+        # Generate a pre-signed URL for the private object
+        presigned_url = s3_client.generate_presigned_url(
+            'get_object',
+            Params={'Bucket': SPACES_BUCKET, 'Key': filename},
+            ExpiresIn=3600  # URL valid for 1 hour
+        )
+        return redirect(presigned_url), 302
+    except ClientError as e:
+        return jsonify({"error": f"Failed to generate pre-signed URL: {str(e)}"}), 500
 
-# Хешування пароля
+# Password hashing
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
-# Реєстрація
+# Register
 @app.route('/api/register', methods=['POST'])
 def register():
     data = request.get_json()
@@ -47,7 +72,7 @@ def register():
     except Exception as e:
         return jsonify(message='User creation failed', error=str(e)), 400
 
-# Логін
+# Login
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.get_json()
@@ -56,10 +81,17 @@ def login():
 
     user = get_user(email, password)
 
-    if user[2] == password:
+    if user and user[2] == password:
         access_token = create_access_token(identity=user[3])
-        refresh_token  = create_access_token(identity=user[3])
-        return jsonify(access_token=access_token, refresh_token=refresh_token, name=user[3], image=user[4], status=user[5], id=user[0]), 200
+        refresh_token = create_refresh_token(identity=user[3])
+        return jsonify(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            name=user[3],
+            image=user[4],
+            status=user[5],
+            id=user[0]
+        ), 200
     else:
         return jsonify(message='Invalid email or password'), 401
 
@@ -70,7 +102,7 @@ def refresh():
     access_token = create_access_token(identity=identity)
     return jsonify(access_token=access_token), 200
 
-# Захищений роут
+# Protected route
 @app.route('/api/protected', methods=['GET'])
 @jwt_required()
 def protected():
@@ -86,7 +118,7 @@ def products():
             product_data = {
                 'id': product[0],
                 'name': product[1],
-                'image': product[2],
+                'image': product[2],  # Contains Spaces object key (e.g., products/filename.jpg)
                 'price': product[3],
                 'count': product[4],
                 'in_date': product[5],
@@ -111,11 +143,13 @@ def add_product():
     in_date = '2024-12-15'
 
     try:
-        filename = save_image_from_base64(base64_image, app.config['UPLOAD_FOLDER'])
+        if not all([SPACES_KEY, SPACES_SECRET, SPACES_REGION, SPACES_ENDPOINT, SPACES_BUCKET]):
+            return jsonify({"error": "Missing DigitalOcean Spaces configuration"}), 500
 
-        image = "products/"+filename
+        filename = save_image_from_base64(base64_image, 'products')
+        image_key = f"products/{filename}"  # Store object key in database
 
-        add_new_product(name, image, price, products_count, in_date, short_description, description)
+        add_new_product(name, image_key, price, products_count, in_date, short_description, description)
         return jsonify(message='Product added successfully'), 201
     except Exception as e:
         return jsonify(error=str(e)), 400
@@ -124,7 +158,7 @@ def add_product():
 def update_product(id):
     data = request.get_json()
     name = data.get('name')
-    base64_image = data.get('image')  # Може бути None
+    base64_image = data.get('image')  # May be None
     price = data.get('price')
     products_count = data.get('count')
     in_date = "2024-12-16"
@@ -134,22 +168,17 @@ def update_product(id):
     try:
         filename = None
         if base64_image:
-            filename = save_image_from_base64(base64_image, app.config['UPLOAD_FOLDER'])
-        
-        update_existing_product(
-            id, 
-            name, 
-            filename,
-            price, 
-            products_count, 
-            in_date, 
-            short_description, 
-            description
-        )
+            if not all([SPACES_KEY, SPACES_SECRET, SPACES_REGION, SPACES_ENDPOINT, SPACES_BUCKET]):
+                return jsonify({"error": "Missing DigitalOcean Spaces configuration"}), 500
+            filename = save_image_from_base64(base64_image, 'products')
+            filename = f"products/{filename}"  # Store object key in database
+
+        update_existing_product(id, name, filename, price, products_count, in_date, short_description, description)
         return jsonify(message='Product updated successfully'), 200
     except Exception as e:
         return jsonify(error=str(e)), 400
 
+# Other routes (delete_product_api, add_review_route, etc.) remain unchanged
 @app.route('/api/products/del/<int:id>', methods=['DELETE'])
 def delete_product_api(id):
     try:
@@ -157,6 +186,8 @@ def delete_product_api(id):
         if not product_id:
             return jsonify({"error": "Product ID is required"}), 400
         
+        # Optional: Delete image from Spaces if needed
+        # get_product_image_key(product_id) would need to be implemented
         delete_product(product_id)
         return jsonify({"message": "Product deleted successfully"}), 200
     except Exception as e:
@@ -164,20 +195,16 @@ def delete_product_api(id):
 
 @app.route('/api/reviews', methods=['POST'])
 def add_review_route():
-    # Отримання даних із запиту
     data = request.get_json()
     product_id = data.get('product_id')
     user_id = data.get('user_id')
     rating = data.get('rating', 0)
-    review = data.get('review', '').strip()
+    review = data.get('review Krzysztof', '').strip()
 
-    # Перевірка вхідних даних
     if not product_id or not user_id or not (1 <= rating <= 5):
         return jsonify({"error": "Invalid product ID, user ID, or rating"}), 400
 
-    # Логіка статусу
-    status = 1 if not review else 0  # Статус: 1 для оцінки без тексту, 0 для тексту з оцінкою
-
+    status = 1 if not review else 0
     try:
         add_review(review, rating, status, user_id, product_id)
         return jsonify({"message": "Review added successfully"}), 201
@@ -250,11 +277,12 @@ def get_orders_route():
                 "order_id": order[0],
                 "name": order[1],
                 "image": order[2],
-                "price": order[3],
+                "price": float(order[3]),  # Ensure price is float
                 "rating": order[4]
             }
             orders_list.append(order_data)
         return jsonify(orders_list), 200
+    return jsonify({"error": "No orders found"}), 404
 
 @app.route('/api/orders/<int:order_id>', methods=['DELETE'])
 def remove_order_route(order_id):
@@ -263,42 +291,37 @@ def remove_order_route(order_id):
         return jsonify({"message": "Product removed from the cart."}), 200
     except Exception as e:
         print(f"Error: {e}")
-        return jsonify("error"), 500
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/checkout', methods=['POST'])
 def checkout():
     user_id = request.json.get('user_id')
     
-    # Отримати всі замовлення користувача
     orders = get_orders(user_id)
     
     if not orders:
         return jsonify({"message": "No orders found."}), 400
     
-    # Формуємо чек
     order_details = []
     total_amount = 0
     
     for order in orders:
         order_data = {
             "name": order[1],
-            "price": order[3],
-            "quantity": order[4] if order[4] else 1,  # Використовуємо кількість, якщо є
+            "price": float(order[3]),
+            "quantity": order[4] if order[4] else 1,
         }
         order_details.append(order_data)
         total_amount += order[3] * (order[4] if order[4] else 1)
     
     receipt_data = {
         "orderDetails": order_details,
-        "totalAmount": total_amount,
+        "totalAmount": float(total_amount),
         "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     }
     
-    # Після створення чеку очищуємо кошик
     clear_cart(user_id)
-
     return jsonify({"receipt": receipt_data, "message": "Order successfully confirmed."}), 200
-
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
