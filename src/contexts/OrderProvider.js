@@ -1,20 +1,31 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useContext } from 'react';
+import { AuthContext } from './AuthProvider'; // Імпортуємо AuthContext
 
 export const OrderContext = createContext();
 
 const OrderProvider = ({ children }) => {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
+    const { user } = useContext(AuthContext); // Отримуємо користувача з AuthContext
 
     // Функція для отримання замовлень
     const fetchOrders = async () => {
+        if (!user) {
+            setLoading(false); // Якщо користувач не залогінений, зупиняємо завантаження
+            return;
+        }
+
         try {
-            const userId = 1; // Замінити на динамічний user id
-            const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/orders?user_id=${userId}`);
+            const userId = user.id; // Використовуємо user.id з AuthContext
+            const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/orders?user_id=${userId}`, {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('accessToken')}`, // Додаємо токен для авторизації
+                },
+            });
             if (response.ok) {
                 const data = await response.json();
                 if (Array.isArray(data)) {
-                    setOrders(data); // зберігаємо тільки якщо дані є масивом
+                    setOrders(data); // Зберігаємо тільки якщо дані є масивом
                 } else {
                     console.error("Invalid data format:", data);
                 }
@@ -28,19 +39,25 @@ const OrderProvider = ({ children }) => {
         }
     };
 
-    // Виклик fetchOrders при завантаженні компонента
+    // Виклик fetchOrders при зміні користувача
     useEffect(() => {
         fetchOrders();
-    }, []);
+    }, [user]); // Залежність від user, щоб оновлювати при вході/виході
 
     // Додавання продукту в корзину
     const handleCart = async (product) => {
+        if (!user) {
+            window.location.href = '/signin'; // Перенаправлення на сторінку входу, якщо не залогінений
+            return;
+        }
+
         try {
-            const userId = 1; // Замінити на динамічний user id
+            const userId = user.id; // Використовуємо user.id з AuthContext
             const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/orders`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    Authorization: `Bearer ${localStorage.getItem('accessToken')}`, // Додаємо токен
                 },
                 body: JSON.stringify({
                     user_id: userId,
@@ -48,8 +65,7 @@ const OrderProvider = ({ children }) => {
                 }),
             });
             if (response.ok) {
-                // Виклик fetchOrders для оновлення списку замовлень
-                await fetchOrders();
+                await fetchOrders(); // Оновлення списку замовлень
             } else {
                 console.error("Failed to add product to cart.");
             }
@@ -60,12 +76,19 @@ const OrderProvider = ({ children }) => {
 
     // Видалення продукту з корзини
     const removeProduct = async (orderId) => {
+        if (!user) {
+            window.location.href = '/signin'; // Перенаправлення на сторінку входу
+            return;
+        }
+
         try {
             const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/orders/${orderId}`, {
                 method: 'DELETE',
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('accessToken')}`, // Додаємо токен
+                },
             });
             if (response.ok) {
-                // Фільтрація видаленого продукту з локального стану
                 setOrders((prevOrders) => prevOrders.filter((order) => order.id_order !== orderId));
                 window.location.href = '/orders';
             } else {
@@ -83,7 +106,7 @@ const OrderProvider = ({ children }) => {
         loading,
         handleCart,
         removeProduct,
-        totalAmount, // Загальна сума
+        totalAmount,
     };
 
     return (
