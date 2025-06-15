@@ -3,6 +3,7 @@ import os
 import uuid
 import base64
 import boto3
+from io import BytesIO
 from PIL import Image
 from botocore.exceptions import ClientError
 
