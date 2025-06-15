@@ -68,7 +68,7 @@ const Footer = () => {
             </div>
             <div className="bg-blue-700">
                 <div className="max-w-screen-xl mx-auto py-4 px-5 flex flex-wrap flex-col justify-center sm:flex-row">
-                    <p className="text-white text-sm text-center sm:text-left">© 2024 Bohdan Havran</p>
+                    <p className="text-white text-sm text-center sm:text-left">© 2025 Bohdan Havran</p>
                 </div>
             </div>
         </footer>
