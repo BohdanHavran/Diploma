@@ -13,8 +13,8 @@ from image import save_image_from_base64, presigned_url
 app = Flask(__name__)
 CORS(app)
 app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY')
-app.config['JWT_ACCESS_TOKEN_EXPIRES'] = os.environ.get('JWT_ACCESS_TOKEN_EXPIRES')
-app.config['JWT_REFRESH_TOKEN_EXPIRES'] = os.environ.get('JWT_REFRESH_TOKEN_EXPIRES')
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = int(os.environ.get('JWT_ACCESS_TOKEN_EXPIRES'))
+app.config['JWT_REFRESH_TOKEN_EXPIRES'] = int(os.environ.get('JWT_REFRESH_TOKEN_EXPIRES'))
 
 jwt = JWTManager(app)
 
