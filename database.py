@@ -297,12 +297,10 @@ def remove_order(order_id):
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
-            # Перевірка існування замовлення
             cursor.execute("SELECT id_order FROM `order` WHERE id_order = %s", (order_id,))
             if cursor.fetchone() is None:
                 raise ValueError("Order not found.")
 
-            # Видалення замовлення
             cursor.execute("DELETE FROM `order` WHERE id_order = %s", (order_id,))
             connection.commit()
     finally:
@@ -317,3 +315,120 @@ def clear_cart(user_id):
     finally:
         connection.close()
 
+def get_checks():
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            sql = """
+                SELECT 
+                    c.id_check,
+                    u.name AS user_name,
+                    p.name AS product_name,
+                    c.order_price,
+                    c.order_date,
+                    c.is_confirmed
+                FROM check c
+                JOIN `order` o ON c.order_users_id_users = o.order_users_id_users
+                JOIN users u ON c.order_users_id_users = u.id_users
+                JOIN products_sklad ps ON o.products_sklad_id_products_sklad = ps.id_products_sklad
+                JOIN products p ON ps.products_id_products = p.id_products
+            """
+            cursor.execute(sql)
+            checks = cursor.fetchall()
+            checks_list = [
+                {
+                    "id_check": check[0],
+                    "user_name": check[1],
+                    "product_name": check[2],
+                    "order_price": check[3],
+                    "order_date": check[4].isoformat() if check[4] else None,
+                    "is_confirmed": bool(check[5]) if check[5] is not None else False
+                }
+                for check in checks
+            ]
+            return checks_list
+    except Exception as e:
+        print(f"Error fetching checks: {e}")
+        return []
+    finally:
+        connection.close()
+
+def confirm_check(id_check):
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            sql = "UPDATE check SET is_confirmed = TRUE WHERE id_check = %s"
+            cursor.execute(sql, (id_check,))
+            connection.commit()
+            return cursor.rowcount > 0
+    except Exception as e:
+        print(f"Error confirming check: {e}")
+        return False
+    finally:
+        connection.close()
+
+def update_check(id_check, quantity):
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            sql = """
+                UPDATE `order` o
+                JOIN check c ON c.order_users_id_users = o.order_users_id_users
+                SET o.order_price = o.order_price / (SELECT order_price FROM `order` WHERE id_order = o.id_order) * %s
+                WHERE c.id_check = %s
+            """
+            cursor.execute(sql, (quantity, id_check))
+            connection.commit()
+            return cursor.rowcount > 0
+    except Exception as e:
+        print(f"Error updating check: {e}")
+        return False
+    finally:
+        connection.close()
+
+def delete_check(id_check):
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            sql = "DELETE FROM check WHERE id_check = %s"
+            cursor.execute(sql, (id_check,))
+            connection.commit()
+            return cursor.rowcount > 0
+    except Exception as e:
+        print(f"Error deleting check: {e}")
+        return False
+    finally:
+        connection.close()
+
+def checkout(user_id, order_details):
+    from datetime import datetime
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            total_amount = sum(item['price'] * item['quantity'] for item in order_details)
+            sql = "INSERT INTO check (order_users_id_users, order_price, order_date) VALUES (%s, %s, NOW())"
+            cursor.execute(sql, (user_id, total_amount))
+            check_id = cursor.lastrowid
+
+            for item in order_details:
+                product_id = item['product_id']
+                quantity = item['quantity']
+                price = item['price']
+                sql_order = """
+                    INSERT INTO `order` (order_users_id_users, products_sklad_id_products_sklad, order_price)
+                    VALUES (%s, (SELECT id_products_sklad FROM products_sklad WHERE products_id_products = %s LIMIT 1), %s)
+                    ON DUPLICATE KEY UPDATE order_price = %s
+                """
+                cursor.execute(sql_order, (user_id, product_id, price * quantity, price * quantity))
+
+            connection.commit()
+            return {
+                "orderDetails": [{"name": "Product", "price": item['price'], "quantity": item['quantity']} for item in order_details],
+                "totalAmount": total_amount,
+                "date": datetime.now().isoformat()
+            }
+    except Exception as e:
+        print(f"Error during checkout: {e}")
+        return None
+    finally:
+        connection.close()

@@ -7,7 +7,14 @@ from flask_jwt_extended import (
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 import hashlib
-from database import create_user, get_user, get_products, user_exists, add_new_product, update_existing_product, delete_product, add_review, get_reviews, approve_review, delete_review, get_orders, add_order, remove_order, clear_cart, get_product_image_key, get_all_orders
+from database import ( 
+    create_user, get_user, get_products, user_exists, 
+    add_new_product, update_existing_product, delete_product, 
+    add_review, get_reviews, approve_review, delete_review, 
+    get_orders, add_order, remove_order, clear_cart, 
+    get_product_image_key, get_all_orders, get_checks, 
+    confirm_check, update_check, delete_check, checkout
+)
 from image import save_image_from_base64, presigned_url, delete_product_image
 
 app = Flask(__name__)
@@ -294,39 +301,46 @@ def remove_order_route(order_id):
         print(f"Error: {e}")
         return jsonify("error"), 500
 
-@app.route('/api/checkout', methods=['POST'])
-def checkout():
-    user_id = request.json.get('user_id')
-    
-    # Отримати всі замовлення користувача
-    orders = get_orders(user_id)
-    
-    if not orders:
-        return jsonify({"message": "No orders found."}), 400
-    
-    # Формуємо чек
-    order_details = []
-    total_amount = 0
-    
-    for order in orders:
-        order_data = {
-            "name": order[1],
-            "price": order[3],
-            "quantity": order[4] if order[4] else 1,  # Використовуємо кількість, якщо є
-        }
-        order_details.append(order_data)
-        total_amount += order[3] * (order[4] if order[4] else 1)
-    
-    receipt_data = {
-        "orderDetails": order_details,
-        "totalAmount": total_amount,
-        "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-    }
-    
-    # Після створення чеку очищуємо кошик
-    clear_cart(user_id)
+@app.route('/api/checks', methods=['GET'])
+def get_checks_route():
+    checks = get_checks()
+    return jsonify(checks), 200
 
-    return jsonify({"receipt": receipt_data, "message": "Order successfully confirmed."}), 200
+@app.route('/api/checks/<int:id_check>/confirm', methods=['PUT'])
+def confirm_check_route(id_check):
+    if confirm_check(id_check):
+        return jsonify({"message": "Check confirmed"}), 200
+    return jsonify({"error": "Check not found"}), 404
+
+@app.route('/api/checks/<int:id_check>', methods=['PUT'])
+def update_check_route(id_check):
+    data = request.get_json()
+    quantity = data.get('quantity')
+    if not quantity or quantity < 1:
+        return jsonify({"error": "Invalid quantity"}), 400
+    if update_check(id_check, quantity):
+        return jsonify({"message": "Check updated"}), 200
+    return jsonify({"error": "Check not found or no associated order"}), 404
+
+@app.route('/api/checks/<int:id_check>', methods=['DELETE'])
+def delete_check_route(id_check):
+    if delete_check(id_check):
+        return jsonify({"message": "Check deleted"}), 200
+    return jsonify({"error": "Check not found"}), 404
+
+@app.route('/api/checkout', methods=['POST'])
+def checkout_route():
+    data = request.get_json()
+    user_id = data.get('user_id')
+    order_details = data.get('order_details')
+
+    if not user_id or not order_details:
+        return jsonify({"error": "Missing user_id or order_details"}), 400
+
+    receipt = checkout(user_id, order_details)
+    if receipt:
+        return jsonify({"receipt": receipt}), 200
+    return jsonify({"error": "Failed to process checkout"}), 500
 
 
 if __name__ == '__main__':
