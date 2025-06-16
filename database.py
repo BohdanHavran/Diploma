@@ -327,7 +327,7 @@ def get_checks():
                     c.order_price,
                     c.order_date,
                     c.is_confirmed
-                FROM check c
+                FROM `check` c
                 JOIN `order` o ON c.order_users_id_users = o.order_users_id_users
                 JOIN users u ON c.order_users_id_users = u.id_users
                 JOIN products_sklad ps ON o.products_sklad_id_products_sklad = ps.id_products_sklad
@@ -357,7 +357,7 @@ def confirm_check(id_check):
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
-            sql = "UPDATE check SET is_confirmed = TRUE WHERE id_check = %s"
+            sql = "UPDATE `check` SET is_confirmed = TRUE WHERE id_check = %s"
             cursor.execute(sql, (id_check,))
             connection.commit()
             return cursor.rowcount > 0
@@ -373,7 +373,7 @@ def update_check(id_check, quantity):
         with connection.cursor() as cursor:
             sql = """
                 UPDATE `order` o
-                JOIN check c ON c.order_users_id_users = o.order_users_id_users
+                JOIN `check` c ON c.order_users_id_users = o.order_users_id_users
                 SET o.order_price = o.order_price / (SELECT order_price FROM `order` WHERE id_order = o.id_order) * %s
                 WHERE c.id_check = %s
             """
@@ -390,7 +390,7 @@ def delete_check(id_check):
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
-            sql = "DELETE FROM check WHERE id_check = %s"
+            sql = "DELETE FROM `check` WHERE id_check = %s"
             cursor.execute(sql, (id_check,))
             connection.commit()
             return cursor.rowcount > 0
@@ -406,7 +406,7 @@ def checkout(user_id, order_details):
     try:
         with connection.cursor() as cursor:
             total_amount = sum(item['price'] * item['quantity'] for item in order_details)
-            sql = "INSERT INTO check (order_users_id_users, order_price, order_date) VALUES (%s, %s, NOW())"
+            sql = "INSERT INTO `check` (order_users_id_users, order_price, order_date) VALUES (%s, %s, NOW())"
             cursor.execute(sql, (user_id, total_amount))
             check_id = cursor.lastrowid
 

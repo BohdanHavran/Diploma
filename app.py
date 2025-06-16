@@ -342,6 +342,5 @@ def checkout_route():
         return jsonify({"receipt": receipt}), 200
     return jsonify({"error": "Failed to process checkout"}), 500
 
-
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
