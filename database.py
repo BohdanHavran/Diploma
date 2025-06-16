@@ -11,6 +11,7 @@ def get_db_connection():
         port=int(os.environ.get('DB_PORT'))
     )
     return connection
+
 # Функція для створення користувача
 def create_user(email, password, name, image, status):
     connection = get_db_connection()
@@ -29,11 +30,7 @@ def user_exists(email):
             sql = "SELECT * FROM users WHERE email = %s"
             cursor.execute(sql, (email,))
             result = cursor.fetchone()
-            # Check if result is None (no matching user found)
-            if result is None:
-                return False
-            # If a result is found, return True
-            return True
+            return result is not None
     finally:
         connection.close()
 
@@ -88,7 +85,6 @@ def get_product_image_key(product_id):
     finally:
         connection.close()
 
-# Оновлення функції для додавання товару
 def add_new_product(name, filename, price, products_count, in_date, short_description, description):
     connection = get_db_connection()
     try:
@@ -109,7 +105,6 @@ def add_new_product(name, filename, price, products_count, in_date, short_descri
     finally:
         connection.close()
 
-# Оновлення функції для оновлення товару
 def update_existing_product(id, name, filename, price, products_count, in_date, short_description, description):
     connection = get_db_connection()
     try:
@@ -141,11 +136,9 @@ def delete_product(product_id):
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
-            # Спочатку видаляємо зі складу
             sql_delete_sklad = "DELETE FROM products_sklad WHERE products_id_products = %s"
             cursor.execute(sql_delete_sklad, (product_id,))
             
-            # Потім видаляємо сам товар
             sql_delete_product = "DELETE FROM products WHERE id_products = %s"
             cursor.execute(sql_delete_product, (product_id,))
             
@@ -266,7 +259,6 @@ def add_order(user_id, product_id):
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
-        # Крок 1: Знайти id_products_sklad
             query_find_sklad_id = """
                 SELECT id_products_sklad 
                 FROM products_sklad 
@@ -279,7 +271,6 @@ def add_order(user_id, product_id):
             if result:
                 sklad_id = result[0]
 
-                # Крок 2: Вставити замовлення у таблицю order
                 query_insert_order = """
                     INSERT INTO `order` 
                         (products_sklad_id_products_sklad, products_sklad_products_id_products, users_id_users)
@@ -326,27 +317,31 @@ def get_checks():
                     p.name AS product_name,
                     c.order_price,
                     c.order_data,
-                    c.is_confirmed
+                    c.is_confirmed,
+                    o.id_order
                 FROM `check` c
-                JOIN `order` o ON c.order_id_order = o.id_order
+                JOIN `check_details` cd ON c.id_check = cd.check_id_check
+                JOIN `order` o ON cd.order_id_order = o.id_order
                 JOIN users u ON c.order_users_id_users = u.id_users
-                JOIN products_sklad ps ON c.order_products_sklad_id_products_sklad = ps.id_products_sklad
-                JOIN products p ON c.order_products_sklad_products_id_products = p.id_products
+                JOIN products_sklad ps ON o.products_sklad_id_products_sklad = ps.id_products_sklad
+                JOIN products p ON o.products_sklad_products_id_products = p.id_products
             """
             cursor.execute(sql)
             checks = cursor.fetchall()
-            checks_list = [
-                {
-                    "id_check": check[0],
-                    "user_name": check[1],
-                    "product_name": check[2],
-                    "order_price": check[3],
-                    "order_date": check[4].isoformat() if check[4] else None,
-                    "is_confirmed": bool(check[5]) if check[5] is not None else False
-                }
-                for check in checks
-            ]
-            return checks_list
+            checks_dict = {}
+            for check in checks:
+                check_id = check[0]
+                if check_id not in checks_dict:
+                    checks_dict[check_id] = {
+                        "id_check": check[0],
+                        "user_name": check[1],
+                        "product_names": [],
+                        "order_price": check[3],
+                        "order_date": check[4].isoformat() if check[4] else None,
+                        "is_confirmed": bool(check[5]) if check[5] is not None else False
+                    }
+                checks_dict[check_id]["product_names"].append(check[2])
+            return list(checks_dict.values())
     except Exception as e:
         print(f"Error fetching checks: {e}")
         return []
@@ -408,9 +403,12 @@ def checkout(user_id, order_details):
             # Розрахунок загальної суми
             total_amount = sum(item['price'] * item['quantity'] for item in order_details)
 
-            # Вставка запису в check
-            sql_check = "INSERT INTO `check` (order_users_id_users, order_price, order_data, is_confirmed) VALUES (%s, %s, NOW(), %s)"
-            cursor.execute(sql_check, (user_id, total_amount, 0))  # is_confirmed = 0 за замовчуванням
+            # Вставка запису в check (без order_id_order, оскільки це обробляється через check_details)
+            sql_check = """
+                INSERT INTO `check` (order_users_id_users, order_price, order_data, is_confirmed)
+                VALUES (%s, %s, NOW(), %s)
+            """
+            cursor.execute(sql_check, (user_id, total_amount, 0))
             check_id = cursor.lastrowid
 
             # Вставка записів в order для кожного продукту
@@ -431,10 +429,13 @@ def checkout(user_id, order_details):
                 update_price_sql = "UPDATE `order` SET order_price = %s WHERE id_order = %s"
                 cursor.execute(update_price_sql, (price * quantity, order_id))
 
-            # Оновлення check з order_id_order (беремо перший order_id для простоти, можна адаптувати)
-            if order_ids:
-                update_check_sql = "UPDATE `check` SET order_id_order = %s WHERE id_check = %s"
-                cursor.execute(update_check_sql, (order_ids[0], check_id))  # Використовуємо перший id_order
+            # Вставка записів в check_details для зв’язку check з order
+            sql_check_details = """
+                INSERT INTO `check_details` (check_id_check, order_id_order)
+                VALUES (%s, %s)
+            """
+            for order_id in order_ids:
+                cursor.execute(sql_check_details, (check_id, order_id))
 
             connection.commit()
             return {
