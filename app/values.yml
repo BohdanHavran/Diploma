@@ -64,7 +64,7 @@ frontend:
     name: frontend
     replicas: 1
     containers:
-      image: registry.digitalocean.com/pharmacy/frontend:3ce7e9d
+      image: registry.digitalocean.com/pharmacy/frontend:9f6faea
       ports:
         containerPort: 80
     resources:
