@@ -403,18 +403,19 @@ def checkout(user_id, order_details):
             # Перевірка order_details
             if not order_details or not isinstance(order_details, list):
                 raise ValueError("order_details must be a non-empty list")
+            print(f"Received order_details: {order_details}")  # Дебагінг
 
             # Розрахунок загальної суми
             total_amount = sum(
                 item.get('price', 0) * item.get('quantity', 1)
                 for item in order_details
-                if item.get('product_id') is not None
+                if item.get('product_id') is not None or item.get('order_id') is not None
             )
 
-            # Вставка запису в check з першим order_id_order
-            product_id = next((item.get('product_id') for item in order_details if item.get('product_id')), None)
+            # Пошук першого валідного product_id або order_id
+            product_id = next((item.get('product_id') or item.get('order_id') for item in order_details if item.get('product_id') or item.get('order_id')), None)
             if not product_id:
-                raise ValueError("No valid product_id found in order_details")
+                raise ValueError("No valid product_id or order_id found in order_details")
 
             sql_check = """
                 INSERT INTO `check` 
@@ -435,7 +436,7 @@ def checkout(user_id, order_details):
             # Вставка записів в order для кожного продукту
             order_ids = []
             for item in order_details:
-                product_id = item.get('product_id')
+                product_id = item.get('product_id') or item.get('order_id')
                 if not product_id:
                     continue
                 quantity = item.get('quantity', 1)
