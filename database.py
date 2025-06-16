@@ -400,11 +400,22 @@ def checkout(user_id, order_details):
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
+            # Перевірка order_details
+            if not order_details or not isinstance(order_details, list):
+                raise ValueError("order_details must be a non-empty list")
+
             # Розрахунок загальної суми
-            total_amount = sum(item['price'] * item['quantity'] for item in order_details)
+            total_amount = sum(
+                item.get('price', 0) * item.get('quantity', 1)
+                for item in order_details
+                if item.get('product_id') is not None
+            )
 
             # Вставка запису в check з першим order_id_order
-            product_id = order_details[0]['product_id'] if order_details else None
+            product_id = next((item.get('product_id') for item in order_details if item.get('product_id')), None)
+            if not product_id:
+                raise ValueError("No valid product_id found in order_details")
+
             sql_check = """
                 INSERT INTO `check` 
                 (order_id_order, order_users_id_users, order_price, order_data, order_products_sklad_id_products_sklad, order_products_sklad_products_id_products, is_confirmed)
@@ -418,15 +429,17 @@ def checkout(user_id, order_details):
                     %s
                 )
             """
-            cursor.execute(sql_check, (0, user_id, total_amount, product_id, product_id, 0))  # Тимчасово 0, оновимо пізніше
+            cursor.execute(sql_check, (0, user_id, total_amount, product_id, product_id, 0))  # Тимчасово 0
             check_id = cursor.lastrowid
 
             # Вставка записів в order для кожного продукту
             order_ids = []
             for item in order_details:
-                product_id = item['product_id']
-                quantity = item['quantity']
-                price = item['price']
+                product_id = item.get('product_id')
+                if not product_id:
+                    continue
+                quantity = item.get('quantity', 1)
+                price = item.get('price', 0)
                 sql_order = """
                     INSERT INTO `order` (users_id_users, products_sklad_id_products_sklad, products_sklad_products_id_products)
                     VALUES (%s, (SELECT id_products_sklad FROM products_sklad WHERE products_id_products = %s LIMIT 1), %s)
@@ -454,7 +467,7 @@ def checkout(user_id, order_details):
 
             connection.commit()
             return {
-                "orderDetails": [{"name": "Product", "price": item['price'], "quantity": item['quantity']} for item in order_details],
+                "orderDetails": [{"name": "Product", "price": item.get('price', 0), "quantity": item.get('quantity', 1)} for item in order_details],
                 "totalAmount": total_amount,
                 "date": datetime.now().isoformat()
             }
