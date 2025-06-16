@@ -403,12 +403,22 @@ def checkout(user_id, order_details):
             # Розрахунок загальної суми
             total_amount = sum(item['price'] * item['quantity'] for item in order_details)
 
-            # Вставка запису в check (без order_id_order, оскільки це обробляється через check_details)
+            # Вставка запису в check з першим order_id_order
+            product_id = order_details[0]['product_id'] if order_details else None
             sql_check = """
-                INSERT INTO `check` (order_users_id_users, order_price, order_data, is_confirmed)
-                VALUES (%s, %s, NOW(), %s)
+                INSERT INTO `check` 
+                (order_id_order, order_users_id_users, order_price, order_data, order_products_sklad_id_products_sklad, order_products_sklad_products_id_products, is_confirmed)
+                VALUES (
+                    %s,
+                    %s,
+                    %s,
+                    NOW(),
+                    (SELECT id_products_sklad FROM products_sklad WHERE products_id_products = %s LIMIT 1),
+                    %s,
+                    %s
+                )
             """
-            cursor.execute(sql_check, (user_id, total_amount, 0))
+            cursor.execute(sql_check, (0, user_id, total_amount, product_id, product_id, 0))  # Тимчасово 0, оновимо пізніше
             check_id = cursor.lastrowid
 
             # Вставка записів в order для кожного продукту
@@ -428,6 +438,11 @@ def checkout(user_id, order_details):
                 # Оновлення order_price для відповідного order
                 update_price_sql = "UPDATE `order` SET order_price = %s WHERE id_order = %s"
                 cursor.execute(update_price_sql, (price * quantity, order_id))
+
+            # Оновлення check з коректним order_id_order (перший order_id)
+            if order_ids:
+                update_check_sql = "UPDATE `check` SET order_id_order = %s WHERE id_check = %s"
+                cursor.execute(update_check_sql, (order_ids[0], check_id))
 
             # Вставка записів в check_details для зв’язку check з order
             sql_check_details = """
