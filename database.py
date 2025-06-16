@@ -405,27 +405,38 @@ def checkout(user_id, order_details):
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
+            # Розрахунок загальної суми
             total_amount = sum(item['price'] * item['quantity'] for item in order_details)
-            sql = "INSERT INTO `check` (order_users_id_users, order_price, order_data) VALUES (%s, %s, NOW())"
-            cursor.execute(sql, (user_id, total_amount))
+
+            # Вставка запису в check
+            sql_check = "INSERT INTO `check` (order_users_id_users, order_price, order_data, is_confirmed) VALUES (%s, %s, NOW(), %s)"
+            cursor.execute(sql_check, (user_id, total_amount, 0))  # is_confirmed = 0 за замовчуванням
             check_id = cursor.lastrowid
 
+            # Вставка записів в order для кожного продукту
+            order_ids = []
             for item in order_details:
                 product_id = item['product_id']
                 quantity = item['quantity']
                 price = item['price']
                 sql_order = """
-                    INSERT INTO `order` (order_users_id_users, products_sklad_id_products_sklad, order_price)
+                    INSERT INTO `order` (users_id_users, products_sklad_id_products_sklad, products_sklad_products_id_products)
                     VALUES (%s, (SELECT id_products_sklad FROM products_sklad WHERE products_id_products = %s LIMIT 1), %s)
-                    ON DUPLICATE KEY UPDATE order_price = %s
                 """
-                cursor.execute(sql_order, (user_id, product_id, price * quantity, price * quantity))
+                cursor.execute(sql_order, (user_id, product_id, product_id))
+                order_id = cursor.lastrowid
+                order_ids.append(order_id)
 
-            order_id = cursor.lastrowid
-            update_sql = "UPDATE `check` SET order_id_order = %s WHERE id_check = %s"
-            cursor.execute(update_sql, (order_id, check_id))
+                # Оновлення order_price для відповідного order
+                update_price_sql = "UPDATE `order` SET order_price = %s WHERE id_order = %s"
+                cursor.execute(update_price_sql, (price * quantity, order_id))
+
+            # Оновлення check з order_id_order (беремо перший order_id для простоти, можна адаптувати)
+            if order_ids:
+                update_check_sql = "UPDATE `check` SET order_id_order = %s WHERE id_check = %s"
+                cursor.execute(update_check_sql, (order_ids[0], check_id))  # Використовуємо перший id_order
+
             connection.commit()
-
             return {
                 "orderDetails": [{"name": "Product", "price": item['price'], "quantity": item['quantity']} for item in order_details],
                 "totalAmount": total_amount,
