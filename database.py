@@ -409,13 +409,19 @@ def checkout(user_id, order_details):
             total_amount = sum(
                 item.get('price', 0) * item.get('quantity', 1)
                 for item in order_details
-                if item.get('product_id') is not None
+                if item.get('id_order') is not None
             )
 
-            # Пошук першого валідного product_id та відповідного id_products_sklad
-            product_id = next((item.get('product_id') for item in order_details if item.get('product_id')), None)
+            # Пошук першого валідного id_order та відповідного product_id
+            id_order = next((item.get('id_order') for item in order_details if item.get('id_order')), None)
+            if not id_order:
+                raise ValueError("No valid id_order found in order_details")
+
+            cursor.execute("SELECT products_sklad_products_id_products FROM `order` WHERE id_order = %s LIMIT 1", (id_order,))
+            product_id = cursor.fetchone()
             if not product_id:
-                raise ValueError("No valid product_id found in order_details")
+                raise ValueError(f"No product_id found for id_order {id_order}")
+            product_id = product_id[0]
 
             cursor.execute("SELECT id_products_sklad FROM products_sklad WHERE products_id_products = %s LIMIT 1", (product_id,))
             sklad_id = cursor.fetchone()
@@ -442,11 +448,18 @@ def checkout(user_id, order_details):
             # Вставка записів в order для кожного продукту
             order_ids = []
             for item in order_details:
-                product_id = item.get('product_id')
-                if not product_id:
+                id_order = item.get('id_order')
+                if not id_order:
                     continue
                 quantity = item.get('quantity', 1)
                 price = item.get('price', 0)
+
+                cursor.execute("SELECT products_sklad_products_id_products FROM `order` WHERE id_order = %s LIMIT 1", (id_order,))
+                product_id = cursor.fetchone()
+                if not product_id:
+                    print(f"Warning: No product_id for id_order {id_order}, skipping.")
+                    continue
+                product_id = product_id[0]
 
                 cursor.execute("SELECT id_products_sklad FROM products_sklad WHERE products_id_products = %s LIMIT 1", (product_id,))
                 sklad_id = cursor.fetchone()
@@ -472,8 +485,10 @@ def checkout(user_id, order_details):
                 INSERT INTO `check_details` (check_id_check, order_id_order)
                 VALUES (%s, %s)
             """
-            for order_id in order_ids:
-                cursor.execute(sql_check_details, (check_id, order_id))
+            for item in order_details:
+                order_id = item.get('id_order')
+                if order_id:
+                    cursor.execute(sql_check_details, (check_id, order_id))
 
             connection.commit()
             return {
