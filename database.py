@@ -409,19 +409,19 @@ def checkout(user_id, order_details):
             total_amount = sum(
                 item.get('price', 0) * item.get('quantity', 1)
                 for item in order_details
-                if item.get('product_id') is not None or item.get('order_id') is not None
+                if item.get('product_id') is not None
             )
 
-            # Пошук першого валідного product_id або order_id
-            product_id = next((item.get('product_id') or item.get('order_id') for item in order_details if item.get('product_id') or item.get('order_id')), None)
+            # Пошук першого валідного product_id
+            product_id = next((item.get('product_id') for item in order_details if item.get('product_id')), None)
             if not product_id:
-                raise ValueError("No valid product_id or order_id found in order_details")
+                raise ValueError("No valid product_id found in order_details")
 
+            # Вставка запису в check (без order_id_order)
             sql_check = """
                 INSERT INTO `check` 
-                (order_id_order, order_users_id_users, order_price, order_data, order_products_sklad_id_products_sklad, order_products_sklad_products_id_products, is_confirmed)
+                (order_users_id_users, order_price, order_data, order_products_sklad_id_products_sklad, order_products_sklad_products_id_products, is_confirmed)
                 VALUES (
-                    %s,
                     %s,
                     %s,
                     NOW(),
@@ -430,13 +430,13 @@ def checkout(user_id, order_details):
                     %s
                 )
             """
-            cursor.execute(sql_check, (0, user_id, total_amount, product_id, product_id, 0))  # Тимчасово 0
+            cursor.execute(sql_check, (user_id, total_amount, product_id, product_id, 0))
             check_id = cursor.lastrowid
 
             # Вставка записів в order для кожного продукту
             order_ids = []
             for item in order_details:
-                product_id = item.get('product_id') or item.get('order_id')
+                product_id = item.get('product_id')
                 if not product_id:
                     continue
                 quantity = item.get('quantity', 1)
@@ -452,11 +452,6 @@ def checkout(user_id, order_details):
                 # Оновлення order_price для відповідного order
                 update_price_sql = "UPDATE `order` SET order_price = %s WHERE id_order = %s"
                 cursor.execute(update_price_sql, (price * quantity, order_id))
-
-            # Оновлення check з коректним order_id_order (перший order_id)
-            if order_ids:
-                update_check_sql = "UPDATE `check` SET order_id_order = %s WHERE id_check = %s"
-                cursor.execute(update_check_sql, (order_ids[0], check_id))
 
             # Вставка записів в check_details для зв’язку check з order
             sql_check_details = """
