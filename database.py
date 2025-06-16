@@ -469,16 +469,12 @@ def checkout(user_id, order_details):
                 sklad_id = sklad_id[0]
 
                 sql_order = """
-                    INSERT INTO `order` (users_id_users, products_sklad_id_products_sklad, products_sklad_products_id_products)
-                    VALUES (%s, %s, %s)
+                    INSERT INTO `order` (users_id_users, products_sklad_id_products_sklad, products_sklad_products_id_products, order_price)
+                    VALUES (%s, %s, %s, %s)
                 """
-                cursor.execute(sql_order, (user_id, sklad_id, product_id))
+                cursor.execute(sql_order, (user_id, sklad_id, product_id, price))
                 order_id = cursor.lastrowid
                 order_ids.append(order_id)
-
-                # Оновлення order_price для відповідного order
-                update_price_sql = "UPDATE `order` SET order_price = %s WHERE id_order = %s"
-                cursor.execute(update_price_sql, (price * quantity, order_id))
 
             # Вставка записів в check_details для зв’язку check з order
             sql_check_details = """
