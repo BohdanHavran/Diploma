@@ -6,7 +6,7 @@ backend:
     name: backend
     replicas: 1
     containers:
-      image: registry.digitalocean.com/pharmacy/backend:630b65f
+      image: registry.digitalocean.com/pharmacy/backend:c9c4308
       ports:
         containerPort: 5000
     resources:
