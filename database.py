@@ -412,12 +412,18 @@ def checkout(user_id, order_details):
                 if item.get('product_id') is not None
             )
 
-            # Пошук першого валідного product_id
+            # Пошук першого валідного product_id та відповідного id_products_sklad
             product_id = next((item.get('product_id') for item in order_details if item.get('product_id')), None)
             if not product_id:
                 raise ValueError("No valid product_id found in order_details")
 
-            # Вставка запису в check (без order_id_order)
+            cursor.execute("SELECT id_products_sklad FROM products_sklad WHERE products_id_products = %s LIMIT 1", (product_id,))
+            sklad_id = cursor.fetchone()
+            if not sklad_id:
+                raise ValueError(f"No products_sklad record found for product_id {product_id}")
+            sklad_id = sklad_id[0]
+
+            # Вставка запису в check
             sql_check = """
                 INSERT INTO `check` 
                 (order_users_id_users, order_price, order_data, order_products_sklad_id_products_sklad, order_products_sklad_products_id_products, is_confirmed)
@@ -425,12 +431,12 @@ def checkout(user_id, order_details):
                     %s,
                     %s,
                     NOW(),
-                    (SELECT id_products_sklad FROM products_sklad WHERE products_id_products = %s LIMIT 1),
+                    %s,
                     %s,
                     %s
                 )
             """
-            cursor.execute(sql_check, (user_id, total_amount, product_id, product_id, 0))
+            cursor.execute(sql_check, (user_id, total_amount, sklad_id, product_id, 0))
             check_id = cursor.lastrowid
 
             # Вставка записів в order для кожного продукту
@@ -441,11 +447,19 @@ def checkout(user_id, order_details):
                     continue
                 quantity = item.get('quantity', 1)
                 price = item.get('price', 0)
+
+                cursor.execute("SELECT id_products_sklad FROM products_sklad WHERE products_id_products = %s LIMIT 1", (product_id,))
+                sklad_id = cursor.fetchone()
+                if not sklad_id:
+                    print(f"Warning: No products_sklad for product_id {product_id}, skipping.")
+                    continue
+                sklad_id = sklad_id[0]
+
                 sql_order = """
                     INSERT INTO `order` (users_id_users, products_sklad_id_products_sklad, products_sklad_products_id_products)
-                    VALUES (%s, (SELECT id_products_sklad FROM products_sklad WHERE products_id_products = %s LIMIT 1), %s)
+                    VALUES (%s, %s, %s)
                 """
-                cursor.execute(sql_order, (user_id, product_id, product_id))
+                cursor.execute(sql_order, (user_id, sklad_id, product_id))
                 order_id = cursor.lastrowid
                 order_ids.append(order_id)
 
