@@ -245,14 +245,13 @@ def get_all_orders():
                     p.name AS product_name,
                     p.image AS product_image,
                     ps.price AS product_price,
-                    o.quantity,
                     IFNULL(AVG(t.rating), 'Rating unavailable') AS product_rating
                 FROM `order` o
                 JOIN users u ON o.users_id_users = u.id_users
                 JOIN products_sklad ps ON o.products_sklad_id_products_sklad = ps.id_products_sklad
                 JOIN products p ON ps.products_id_products = p.id_products
                 LEFT JOIN testimonials t ON p.id_products = t.products_id_products
-                GROUP BY o.id_order, u.name, p.name, p.image, ps.price, o.quantity;
+                GROUP BY o.id_order, u.name, p.name, p.image, ps.price;
             """
             cursor.execute(sql)
             orders = cursor.fetchall()

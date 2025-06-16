@@ -280,8 +280,7 @@ def get_orders_route():
             "name": order[2],
             "image": order[3],
             "price": order[4],
-            "quantity": order[5],
-            "rating": order[6]
+            "rating": order[5]
         }
         orders_list.append(order_data)
     return jsonify(orders_list), 200
