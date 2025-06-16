@@ -325,7 +325,7 @@ def get_checks():
                     u.name AS user_name,
                     p.name AS product_name,
                     c.order_price,
-                    c.order_data,  -- Використовуємо order_data замість order_date
+                    c.order_data,
                     c.is_confirmed
                 FROM `check` c
                 JOIN `order` o ON c.order_id_order = o.id_order
@@ -341,7 +341,7 @@ def get_checks():
                     "user_name": check[1],
                     "product_name": check[2],
                     "order_price": check[3],
-                    "order_date": check[4].isoformat() if check[4] else None,  -- Зберігаємо як order_date для фронтенду
+                    "order_date": check[4].isoformat() if check[4] else None,
                     "is_confirmed": bool(check[5]) if check[5] is not None else False
                 }
                 for check in checks
@@ -421,8 +421,7 @@ def checkout(user_id, order_details):
                 """
                 cursor.execute(sql_order, (user_id, product_id, price * quantity, price * quantity))
 
-            # Створюємо зв’язок із check через order_id_order (потрібно оновити check з id_order)
-            order_id = cursor.lastrowid  # Отримуємо останній вставлений id_order
+            order_id = cursor.lastrowid
             update_sql = "UPDATE `check` SET order_id_order = %s WHERE id_check = %s"
             cursor.execute(update_sql, (order_id, check_id))
             connection.commit()
