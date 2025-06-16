@@ -412,41 +412,18 @@ def checkout(user_id, order_details):
                 if item.get('id_order') is not None
             )
 
-            # Пошук першого валідного id_order та відповідного product_id
-            id_order = next((item.get('id_order') for item in order_details if item.get('id_order')), None)
-            if not id_order:
-                raise ValueError("No valid id_order found in order_details")
-
-            cursor.execute("SELECT products_sklad_products_id_products FROM `order` WHERE id_order = %s LIMIT 1", (id_order,))
-            product_id = cursor.fetchone()
-            if not product_id:
-                raise ValueError(f"No product_id found for id_order {id_order}")
-            product_id = product_id[0]
-
-            cursor.execute("SELECT id_products_sklad FROM products_sklad WHERE products_id_products = %s LIMIT 1", (product_id,))
-            sklad_id = cursor.fetchone()
-            if not sklad_id:
-                raise ValueError(f"No products_sklad record found for product_id {product_id}")
-            sklad_id = sklad_id[0]
-
             # Вставка запису в check
             sql_check = """
                 INSERT INTO `check` 
-                (order_users_id_users, order_price, order_data, order_products_sklad_id_products_sklad, order_products_sklad_products_id_products, is_confirmed)
-                VALUES (
-                    %s,
-                    %s,
-                    NOW(),
-                    %s,
-                    %s,
-                    %s
-                )
+                (order_users_id_users, order_price, order_data, is_confirmed)
+                VALUES (%s, %s, NOW(), %s)
             """
-            cursor.execute(sql_check, (user_id, total_amount, sklad_id, product_id, 0))
+            cursor.execute(sql_check, (user_id, total_amount, 0))
             check_id = cursor.lastrowid
 
             # Вставка записів в order для кожного продукту
             order_ids = []
+            order_details_with_products = []
             for item in order_details:
                 id_order = item.get('id_order')
                 if not id_order:
@@ -454,6 +431,7 @@ def checkout(user_id, order_details):
                 quantity = item.get('quantity', 1)
                 price = item.get('price', 0)
 
+                # Отримання product_id з таблиці order
                 cursor.execute("SELECT products_sklad_products_id_products FROM `order` WHERE id_order = %s LIMIT 1", (id_order,))
                 product_id = cursor.fetchone()
                 if not product_id:
@@ -461,6 +439,7 @@ def checkout(user_id, order_details):
                     continue
                 product_id = product_id[0]
 
+                # Отримання sklad_id
                 cursor.execute("SELECT id_products_sklad FROM products_sklad WHERE products_id_products = %s LIMIT 1", (product_id,))
                 sklad_id = cursor.fetchone()
                 if not sklad_id:
@@ -468,27 +447,44 @@ def checkout(user_id, order_details):
                     continue
                 sklad_id = sklad_id[0]
 
+                # Вставка в order
                 sql_order = """
-                    INSERT INTO `order` (users_id_users, products_sklad_id_products_sklad, products_sklad_products_id_products, order_price)
-                    VALUES (%s, %s, %s, %s)
+                    INSERT INTO `order` (users_id_users, products_sklad_id_products_sklad, products_sklad_products_id_products)
+                    VALUES (%s, %s, %s)
                 """
-                cursor.execute(sql_order, (user_id, sklad_id, product_id, price))
+                cursor.execute(sql_order, (user_id, sklad_id, product_id))
                 order_id = cursor.lastrowid
                 order_ids.append(order_id)
+
+                # Оновлення order_price та quantity
+                update_sql = """
+                    UPDATE `order` 
+                    SET order_price = %s, quantity = %s 
+                    WHERE id_order = %s
+                """
+                cursor.execute(update_sql, (price * quantity, quantity, order_id))
+
+                # Отримання назви продукту
+                cursor.execute("SELECT name FROM products WHERE id_products = %s", (product_id,))
+                product_name = cursor.fetchone()
+                if product_name:
+                    order_details_with_products.append({
+                        "name": product_name[0],
+                        "price": price,
+                        "quantity": quantity
+                    })
 
             # Вставка записів в check_details для зв’язку check з order
             sql_check_details = """
                 INSERT INTO `check_details` (check_id_check, order_id_order)
                 VALUES (%s, %s)
             """
-            for item in order_details:
-                order_id = item.get('id_order')
-                if order_id:
-                    cursor.execute(sql_check_details, (check_id, order_id))
+            for order_id in order_ids:
+                cursor.execute(sql_check_details, (check_id, order_id))
 
             connection.commit()
             return {
-                "orderDetails": [{"name": "Product", "price": item.get('price', 0), "quantity": item.get('quantity', 1)} for item in order_details],
+                "orderDetails": order_details_with_products,
                 "totalAmount": total_amount,
                 "date": datetime.now().isoformat()
             }
