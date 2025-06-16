@@ -325,13 +325,13 @@ def get_checks():
                     u.name AS user_name,
                     p.name AS product_name,
                     c.order_price,
-                    c.order_date,
+                    c.order_data,  -- Використовуємо order_data замість order_date
                     c.is_confirmed
                 FROM `check` c
-                JOIN `order` o ON c.order_users_id_users = o.order_users_id_users
+                JOIN `order` o ON c.order_id_order = o.id_order
                 JOIN users u ON c.order_users_id_users = u.id_users
-                JOIN products_sklad ps ON o.products_sklad_id_products_sklad = ps.id_products_sklad
-                JOIN products p ON ps.products_id_products = p.id_products
+                JOIN products_sklad ps ON c.order_products_sklad_id_products_sklad = ps.id_products_sklad
+                JOIN products p ON c.order_products_sklad_products_id_products = p.id_products
             """
             cursor.execute(sql)
             checks = cursor.fetchall()
@@ -341,7 +341,7 @@ def get_checks():
                     "user_name": check[1],
                     "product_name": check[2],
                     "order_price": check[3],
-                    "order_date": check[4].isoformat() if check[4] else None,
+                    "order_date": check[4].isoformat() if check[4] else None,  -- Зберігаємо як order_date для фронтенду
                     "is_confirmed": bool(check[5]) if check[5] is not None else False
                 }
                 for check in checks
@@ -373,7 +373,7 @@ def update_check(id_check, quantity):
         with connection.cursor() as cursor:
             sql = """
                 UPDATE `order` o
-                JOIN `check` c ON c.order_users_id_users = o.order_users_id_users
+                JOIN `check` c ON c.order_id_order = o.id_order
                 SET o.order_price = o.order_price / (SELECT order_price FROM `order` WHERE id_order = o.id_order) * %s
                 WHERE c.id_check = %s
             """
@@ -406,7 +406,7 @@ def checkout(user_id, order_details):
     try:
         with connection.cursor() as cursor:
             total_amount = sum(item['price'] * item['quantity'] for item in order_details)
-            sql = "INSERT INTO `check` (order_users_id_users, order_price, order_date) VALUES (%s, %s, NOW())"
+            sql = "INSERT INTO `check` (order_users_id_users, order_price, order_data) VALUES (%s, %s, NOW())"
             cursor.execute(sql, (user_id, total_amount))
             check_id = cursor.lastrowid
 
@@ -421,7 +421,12 @@ def checkout(user_id, order_details):
                 """
                 cursor.execute(sql_order, (user_id, product_id, price * quantity, price * quantity))
 
+            # Створюємо зв’язок із check через order_id_order (потрібно оновити check з id_order)
+            order_id = cursor.lastrowid  # Отримуємо останній вставлений id_order
+            update_sql = "UPDATE `check` SET order_id_order = %s WHERE id_check = %s"
+            cursor.execute(update_sql, (order_id, check_id))
             connection.commit()
+
             return {
                 "orderDetails": [{"name": "Product", "price": item['price'], "quantity": item['quantity']} for item in order_details],
                 "totalAmount": total_amount,
