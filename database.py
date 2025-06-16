@@ -234,6 +234,35 @@ def get_orders(user_id):
     finally:
         connection.close()
 
+def get_all_orders():
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            sql = """
+                SELECT 
+                    o.id_order, 
+                    u.name AS user_name,
+                    p.name AS product_name,
+                    p.image AS product_image,
+                    ps.price AS product_price,
+                    o.quantity,
+                    IFNULL(AVG(t.rating), 'Rating unavailable') AS product_rating
+                FROM `order` o
+                JOIN users u ON o.users_id_users = u.id_users
+                JOIN products_sklad ps ON o.products_sklad_id_products_sklad = ps.id_products_sklad
+                JOIN products p ON ps.products_id_products = p.id_products
+                LEFT JOIN testimonials t ON p.id_products = t.products_id_products
+                GROUP BY o.id_order, u.name, p.name, p.image, ps.price, o.quantity;
+            """
+            cursor.execute(sql)
+            orders = cursor.fetchall()
+            return orders
+    except Exception as e:
+        print(f"Error fetching orders: {e}")
+        return []
+    finally:
+        connection.close()
+
 def add_order(user_id, product_id):
     connection = get_db_connection()
     try:

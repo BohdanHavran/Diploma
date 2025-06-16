@@ -7,7 +7,7 @@ from flask_jwt_extended import (
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 import hashlib
-from database import create_user, get_user, get_products, user_exists, add_new_product, update_existing_product, delete_product, add_review, get_reviews, approve_review, delete_review, get_orders, add_order, remove_order, clear_cart, get_product_image_key
+from database import create_user, get_user, get_products, user_exists, add_new_product, update_existing_product, delete_product, add_review, get_reviews, approve_review, delete_review, get_orders, add_order, remove_order, clear_cart, get_product_image_key, get_all_orders
 from image import save_image_from_base64, presigned_url, delete_product_image
 
 app = Flask(__name__)
@@ -250,8 +250,8 @@ def add_order_route():
         print(f"Error: {e}")
         return jsonify({"error": "Failed to add product to the cart."}), 500
 
-@app.route('/api/orders', methods=['GET'])
-def get_orders_route():
+@app.route('/api/order', methods=['GET'])
+def get_order_route():
     user_id = request.args.get('user_id')
     orders = get_orders(user_id)
 
@@ -267,6 +267,23 @@ def get_orders_route():
             }
             orders_list.append(order_data)
     
+    return jsonify(orders_list), 200
+
+@app.route('/api/orders', methods=['GET'])
+def get_orders_route():
+    orders = get_all_orders()
+    orders_list = []
+    for order in orders:
+        order_data = {
+            "order_id": order[0],
+            "user_name": order[1],
+            "name": order[2],
+            "image": order[3],
+            "price": order[4],
+            "quantity": order[5],
+            "rating": order[6]
+        }
+        orders_list.append(order_data)
     return jsonify(orders_list), 200
 
 @app.route('/api/orders/<int:order_id>', methods=['DELETE'])
