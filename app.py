@@ -28,6 +28,10 @@ jwt = JWTManager(app)
 UPLOAD_FOLDER = 'products'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
+@app.route('/api/health', methods=['GET'])
+def health():
+    return jsonify(message=f"Welcome"), 200
+
 @app.route('/products/<path:filename>')
 def get_photo(filename):
     try:
