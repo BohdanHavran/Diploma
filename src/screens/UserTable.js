@@ -7,7 +7,7 @@ const UserTable = () => {
     ]);
 
     return (
-        <div>
+        <div className="h-screen">
             <h2 className="text-xl font-bold mb-4">Manage Users</h2>
             <table className="w-full border-collapse border border-gray-200">
                 <thead>
