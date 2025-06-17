@@ -1,31 +1,30 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import { AuthContext } from './AuthProvider'; // Імпортуємо AuthContext
+import { AuthContext } from './AuthProvider';
 
 export const OrderContext = createContext();
 
 const OrderProvider = ({ children }) => {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
-    const { user } = useContext(AuthContext); // Отримуємо користувача з AuthContext
+    const { user } = useContext(AuthContext);
 
-    // Функція для отримання замовлень
     const fetchOrders = async () => {
         if (!user) {
-            setLoading(false); // Якщо користувач не залогінений, зупиняємо завантаження
+            setLoading(false);
             return;
         }
 
         try {
-            const userId = user.id; // Використовуємо user.id з AuthContext
-            const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/orders?user_id=${userId}`, {
+            const userId = user.id;
+            const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/order?user_id=${userId}`, {
                 headers: {
-                    Authorization: `Bearer ${localStorage.getItem('accessToken')}`, // Додаємо токен для авторизації
+                    Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
                 },
             });
             if (response.ok) {
                 const data = await response.json();
                 if (Array.isArray(data)) {
-                    setOrders(data); // Зберігаємо тільки якщо дані є масивом
+                    setOrders(data);
                 } else {
                     console.error("Invalid data format:", data);
                 }
@@ -39,25 +38,42 @@ const OrderProvider = ({ children }) => {
         }
     };
 
-    // Виклик fetchOrders при зміні користувача
+    const clearCart = async (userId) => {
+        try {
+            const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/orders/clear`, {
+                method: 'DELETE',
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+                },
+                body: JSON.stringify({ user_id: userId }),
+            });
+            if (response.ok) {
+                setOrders([]); // Clear client-side state
+                fetchOrders(); // Sync with backend
+            } else {
+                console.error("Failed to clear cart.");
+            }
+        } catch (error) {
+            console.error("Error clearing cart:", error);
+        }
+    };
+
     useEffect(() => {
         fetchOrders();
-    }, [user]); // Залежність від user, щоб оновлювати при вході/виході
+    }, [user]);
 
-    // Додавання продукту в корзину
     const handleCart = async (product) => {
         if (!user) {
-            window.location.href = '/signin'; // Перенаправлення на сторінку входу, якщо не залогінений
+            window.location.href = '/signin';
             return;
         }
-
         try {
-            const userId = user.id; // Використовуємо user.id з AuthContext
+            const userId = user.id;
             const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/orders`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    Authorization: `Bearer ${localStorage.getItem('accessToken')}`, // Додаємо токен
+                    Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
                 },
                 body: JSON.stringify({
                     user_id: userId,
@@ -65,7 +81,7 @@ const OrderProvider = ({ children }) => {
                 }),
             });
             if (response.ok) {
-                await fetchOrders(); // Оновлення списку замовлень
+                await fetchOrders();
             } else {
                 console.error("Failed to add product to cart.");
             }
@@ -74,18 +90,16 @@ const OrderProvider = ({ children }) => {
         }
     };
 
-    // Видалення продукту з корзини
     const removeProduct = async (orderId) => {
         if (!user) {
-            window.location.href = '/signin'; // Перенаправлення на сторінку входу
+            window.location.href = '/signin';
             return;
         }
-
         try {
             const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/orders/${orderId}`, {
                 method: 'DELETE',
                 headers: {
-                    Authorization: `Bearer ${localStorage.getItem('accessToken')}`, // Додаємо токен
+                    Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
                 },
             });
             if (response.ok) {
@@ -106,6 +120,7 @@ const OrderProvider = ({ children }) => {
         loading,
         handleCart,
         removeProduct,
+        clearCart,
         totalAmount,
     };
 

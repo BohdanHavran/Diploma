@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import ProductTable from './ProductsScreenAdmin';
 import UserTable from './UserTable';
-import ReviewTable from './ReviewTable'; // Підключили новий компонент
+import ReviewTable from './ReviewTable';
+import OrderTable from './OrderTable'; // Підключили новий компонент
 
 const AdminPanel = () => {
     const [activeTab, setActiveTab] = useState('products');
 
     return (
-        <section className="max-w-screen-xl py-24 mx-auto px-6">
+        <section className="h-screen max-w-screen-xl py-24 mx-auto px-6">
             <div className="flex justify-center space-x-4">
                 <button 
                     className={`btn ${activeTab === 'products' ? 'w-24 btn-primary mx-0 py-3 px-2 poppins text-sm' : 'w-24 btn-secondary mx-0 py-3 px-2 poppins text-sm'}`} 
@@ -22,6 +23,12 @@ const AdminPanel = () => {
                     Users
                 </button>
                 <button 
+                    className={`btn ${activeTab === 'orders' ? 'w-24 btn-primary mx-0 py-3 px-2 poppins text-sm' : 'w-24 btn-secondary mx-0 py-3 px-2 poppins text-sm'}`} 
+                    onClick={() => setActiveTab('orders')}
+                >
+                    Orders
+                </button>
+                <button 
                     className={`btn ${activeTab === 'reviews' ? 'w-24 btn-primary mx-0 py-3 px-2 poppins text-sm' : 'w-24 btn-secondary mx-0 py-3 px-2 poppins text-sm'}`} 
                     onClick={() => setActiveTab('reviews')}
                 >
@@ -30,6 +37,7 @@ const AdminPanel = () => {
             </div>
             {activeTab === 'products' && <ProductTable />}
             {activeTab === 'users' && <UserTable />}
+            {activeTab === 'orders' && <OrderTable />}
             {activeTab === 'reviews' && <ReviewTable />}
         </section>
     );

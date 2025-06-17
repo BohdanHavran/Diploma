@@ -3,33 +3,47 @@ import Bounce from 'react-reveal/Bounce';
 import OrderCard from '../components/Order/OrderCard';
 import useOrder from '../hooks/useOrder';
 import useAuth from '../hooks/useAuth';
+import swal from 'sweetalert';
 
 const OrderScreen = () => {
     const { user } = useAuth();
-    const { orders, clearCart } = useOrder(); // Використовуємо ваш хук для отримання замовлень та очищення кошика
-    const [receipt, setReceipt] = useState(null);
+    const { orders, clearCart } = useOrder(); // Changed to use clearCart instead of removeProduct
+    const [isOrderConfirmed, setIsOrderConfirmed] = useState(false);
 
-    // Функція для підтвердження замовлення
     const handleConfirmOrder = async () => {
         try {
-            const userId = user.id  ; // Встановити динамічний user_id
+            const userId = user.id;
+            console.log('Orders before checkout:', orders);
             const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/checkout`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
                 },
-                body: JSON.stringify({ user_id: userId }),
+                body: JSON.stringify({
+                    user_id: userId,
+                    order_details: orders.map(item => ({
+                        id_order: item.order_id,
+                        quantity: item.quantity || 1,
+                        price: item.price
+                    }))
+                }),
             });
-    
+
             if (response.ok) {
                 const data = await response.json();
-                setReceipt(data.receipt);
-                clearCart();
+                clearCart(userId); // Clear cart on the client and sync with backend
+                setIsOrderConfirmed(true); // Show success message
+                swal("Успішно!", "Замовлення оформлено. Корзина очищена.", "success").then((result) => {
+                    window.location.href = '/orders';
+                });
+                
             } else {
-                console.error('Failed to confirm order');
+                swal("Помилка", "Не вдалося оформити замовлення", "error");
             }
         } catch (error) {
             console.error('Error confirming order:', error);
+            swal("Помилка", "Сталася помилка при оформленні замовлення", "error");
         }
     };
 
@@ -48,36 +62,24 @@ const OrderScreen = () => {
                     <div className="flex justify-center">
                         <div className="flex flex-col space-y-4">
                             {orders.map(item => (
-                                <OrderCard key={item.id} {...item} />
+                                <OrderCard key={item.id_order} {...item} />
                             ))}
                         </div>
                     </div>
+                    <div className="flex justify-center">
+                        <button
+                            onClick={handleConfirmOrder}
+                            className="mt-5 px-4 py-2 bg-green-600 text-white rounded-md"
+                            disabled={orders.length === 0}
+                        >
+                            Підтвердити замовлення
+                        </button>
+                    </div>
                 </>
             )}
-            {orders.length > 0 && (
-                <div className="flex justify-center">
-                    <button
-                        onClick={handleConfirmOrder}
-                        className="mt-5 px-4 py-2 bg-green-600 text-white rounded-md"
-                    >
-                        Підтвердити замовлення
-                    </button>
-                </div>
-            )}
-            {receipt && (
-                <div className="mt-5 bg-white p-4 border rounded-md">
-                    <h2>Receipt</h2>
-                    <ul>
-                        {receipt.orderDetails.map((item, index) => (
-                            <li key={index}>{item.name} - {item.price} x {item.quantity}</li>
-                        ))}
-                    </ul>
-                    <h3>Total: {receipt.totalAmount}</h3>
-                    <p>Date: {receipt.date}</p>
-                </div>
-            )}
+            {isOrderConfirmed}
         </section>
     );
-}
+};
 
-export default OrderScreen
+export default OrderScreen;
