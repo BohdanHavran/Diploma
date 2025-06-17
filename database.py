@@ -219,13 +219,13 @@ def get_orders(user_id):
                 LEFT JOIN testimonials t ON p.id_products = t.products_id_products
                 LEFT JOIN check_details cd ON o.id_order = cd.order_id_order
                 WHERE o.users_id_users = %s
-                AND cd.order_id_order IS NULL  -- Exclude orders linked to check
+                AND cd.order_id_order IS NULL  -- Exclude orders linked to checks
                 GROUP BY o.id_order, p.name, p.image, ps.price;
             """
             cursor.execute(sql, (user_id,))
             orders = cursor.fetchall()
             connection.commit()
-            return [dict(zip([column[0] for column in cursor.description], row)) for row in orders]
+            return orders
     finally:
         connection.close()
 
