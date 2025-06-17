@@ -8,7 +8,7 @@ const AdminPanel = () => {
     const [activeTab, setActiveTab] = useState('products');
 
     return (
-        <section className="h-screen max-w-screen-xl py-24 mx-auto px-6">
+        <section className="max-w-screen-xl py-24 mx-auto px-6">
             <div className="flex justify-center space-x-4">
                 <button 
                     className={`btn ${activeTab === 'products' ? 'w-24 btn-primary mx-0 py-3 px-2 poppins text-sm' : 'w-24 btn-secondary mx-0 py-3 px-2 poppins text-sm'}`} 
