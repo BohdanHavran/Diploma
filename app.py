@@ -305,6 +305,25 @@ def remove_order_route(order_id):
         print(f"Error: {e}")
         return jsonify("error"), 500
 
+@app.route('/api/orders/clear', methods=['DELETE'])
+def clear_cart_route():
+    data = request.get_json()
+    user_id = data.get('user_id')
+    if not user_id:
+        return jsonify({"error": "Missing user_id"}), 400
+
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("DELETE FROM `order` WHERE users_id_users = %s", (user_id,))
+            connection.commit()
+        return jsonify({"message": "Cart cleared successfully"}), 200
+    except Exception as e:
+        print(f"Error clearing cart: {e}")
+        return jsonify({"error": "Failed to clear cart"}), 500
+    finally:
+        connection.close()
+
 @app.route('/api/checks', methods=['GET'])
 def get_checks_route():
     checks = get_checks()
