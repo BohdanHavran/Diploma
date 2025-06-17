@@ -16,6 +16,18 @@ backend:
       limits:
         cpu: 100m
         memory: 128Mi
+    livenessProbe:
+      httpGet:
+        path: /api/health
+        port: 80
+      initialDelaySeconds: 15
+      periodSeconds: 10
+    readinessProbe:
+      httpGet:
+        path: /api/health
+        port: 80
+      initialDelaySeconds: 5
+      periodSeconds: 5
   secret:
     JWT_SECRET_KEY: ZWJlMjFkMmU5YWZmNzQ5ZTY1M2FkYzcxNTM3MTg2YTZkZWQ5MDljNDNjNzI5NDhjZmFmMmY2YzZjY2RhZGZhNQ==
     JWT_ACCESS_TOKEN_EXPIRES: MTgwMA==

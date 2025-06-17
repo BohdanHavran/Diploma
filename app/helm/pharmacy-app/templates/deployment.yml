@@ -38,6 +38,14 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+          {{- if $comp.livenessProbe }}
+          livenessProbe:
+            {{- toYaml $comp.livenessProbe | nindent 12 }}
+          {{- end }}
+          {{- if $comp.readinessProbe }}
+          readinessProbe:
+            {{- toYaml $comp.readinessProbe | nindent 12 }}
+          {{- end }}
 ---
 {{- end }}
 {{- end }}
