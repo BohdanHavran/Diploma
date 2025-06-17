@@ -292,6 +292,10 @@ def remove_order(order_id):
             if cursor.fetchone() is None:
                 raise ValueError("Order not found.")
 
+            # Delete associated check_details records first
+            cursor.execute("DELETE FROM `check_details` WHERE order_id_order = %s", (order_id,))
+            
+            # Then delete the order
             cursor.execute("DELETE FROM `order` WHERE id_order = %s", (order_id,))
             connection.commit()
     finally:
@@ -301,11 +305,18 @@ def clear_cart(user_id):
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
+            # Delete associated check_details records first
+            cursor.execute("SELECT id_order FROM `order` WHERE users_id_users = %s", (user_id,))
+            order_ids = [row[0] for row in cursor.fetchall()]
+            if order_ids:
+                cursor.execute("DELETE FROM `check_details` WHERE order_id_order IN %s", (tuple(order_ids),))
+
+            # Then delete the orders
             cursor.execute("DELETE FROM `order` WHERE users_id_users = %s", (user_id,))
             connection.commit()
     finally:
         connection.close()
-
+        
 def get_checks():
     connection = get_db_connection()
     try:
